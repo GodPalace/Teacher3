@@ -21,7 +21,6 @@ public class NetworkCore {
         }
     }
 
-    private final CopyOnWriteArrayList<Teacher> teachers;
     private final Selector selector;
     private final ServerSocketChannel positiveServerChannel;
 
@@ -32,82 +31,72 @@ public class NetworkCore {
         positiveServerChannel.configureBlocking(false);
         positiveServerChannel.bind(address);
         positiveServerChannel.register(allSelector, SelectionKey.OP_ACCEPT).attach(this);
-
-        teachers = new CopyOnWriteArrayList<>();
         selector = Selector.open();
     }
 
     public static void manage() {
         new Thread(() -> {
             try {
-                allSelector.select();
+                while (true) {
+                    allSelector.select();
 
-                for (SelectionKey key : allSelector.selectedKeys()) {
-                    if (key.isAcceptable()) {
-                        NetworkCore core = (NetworkCore) key.attachment();
-                        SocketChannel channel = core.positiveServerChannel.accept();
-                        core.addTeacher(new Teacher(channel));
+                    for (SelectionKey key : allSelector.selectedKeys()) {
+                        if (key.isAcceptable()) {
+                            NetworkCore core = (NetworkCore) key.attachment();
+                            SocketChannel channel = core.positiveServerChannel.accept();
+                            core.addTeacher(new Teacher(channel));
+
+                            log.info("New teacher connected: {}", channel.getRemoteAddress());
+                        }
                     }
+
+                    allSelector.selectedKeys().clear();
                 }
-
-                allSelector.selectedKeys().clear();
             } catch (IOException e) {
-                throw new RuntimeException(e);
-            }
-        });
-    }
-
-    public void start() {
-        new Thread(() -> {
-            try {
-                runReceiver();
-            } catch (IOException e) {
-                throw new RuntimeException(e);
+                log.error("Error while managing selector", e);
             }
         }).start();
     }
 
+    public void start() {
+        new Thread(() -> {
+            log.info("Starting receiver");
+            runReceiver();
+        }).start();
+    }
+
     private void addTeacher(Teacher teacher) throws ClosedChannelException {
-        teachers.add(teacher);
         teacher.getChannel()
                 .register(selector, SelectionKey.OP_READ)
                 .attach(teacher);
     }
 
     public void removeTeacher(Teacher teacher) throws IOException {
-        teachers.remove(teacher);
         teacher.close();
     }
 
-    public  boolean hasTeachers() {
-        return !teachers.isEmpty();
-    }
-
-    public boolean hasTeacher(Teacher teacher) {
-        return teachers.contains(teacher);
-    }
-
-    private void runReceiver() throws IOException {
+    private void runReceiver() {
         while (!isClosed) {
-            selector.select();
-            System.out.println("selector.select()");
+            try {
+                selector.select(1000);
 
-            for (SelectionKey key : selector.selectedKeys()) {
-                if (key.isReadable()) {
-                    ByteArrayOutputStream bufferOut = new ByteArrayOutputStream();
-                    SocketChannel channel = ((Teacher) key.attachment()).getChannel();
+                for (SelectionKey key : selector.selectedKeys()) {
+                    Teacher teacher = (Teacher) key.attachment();
 
-                    int len;
-                    ByteBuffer buffer = ByteBuffer.allocate(1024);
-                    while ((len = channel.read(buffer)) > 0) {
-                        bufferOut.write(buffer.array(), 0, len);
+                    if (key.isReadable()) {
+                        if (!teacher.isAlive()) {
+                            removeTeacher(teacher);
+                            continue;
+                        }
+
+                        CommandProcessor.handle(teacher);
                     }
-
-                    CommandProcessor.handle(bufferOut.toByteArray());
                 }
-            }
 
-            selector.selectedKeys().clear();
+                selector.selectedKeys().clear();
+            } catch (IOException e) {
+                log.error("Error while running receiver", e);
+            }
         }
     }
 

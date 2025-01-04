@@ -1,10 +1,7 @@
 package com.godpalace.student;
 
 import lombok.extern.slf4j.Slf4j;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.lang.invoke.MethodHandles;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
@@ -34,13 +31,14 @@ public class Main {
                     InetSocketAddress socketAddress = new InetSocketAddress(address, MAIN_PORT);
 
                     NetworkCore core = new NetworkCore(socketAddress);
-                    cores.add(core);
                     core.start();
+                    cores.add(core);
 
                     log.debug("Initialized core at {}", socketAddress);
                 }
             }
         }
+        NetworkCore.manage();
     }
 
     public static void main(String[] args) {
