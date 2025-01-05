@@ -1,12 +1,11 @@
 package com.godpalace.student;
 
 import com.godpalace.student.module.Module;
-import com.godpalace.student.util.PackageUtil;
+import com.godpalace.student.module.ModuleManager;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;
-import java.util.List;
 
 /*
  * 数据包格式：
@@ -17,36 +16,9 @@ import java.util.List;
 
 @Slf4j
 public class CommandProcessor {
-    private static final HashMap<Short, Module> modules = new HashMap<>();
-
-    public static void initialize() throws Exception {
-        try {
-            ClassLoader loader = Thread.currentThread().getContextClassLoader();
-            List<String> classes = PackageUtil.getClassName("com.godpalace.student.module");
-            for (String classPath : classes) {
-                String className = classPath.substring(classPath.lastIndexOf(".") + 1);
-                if (className.equals("Module")) continue;
-
-                Class<?> clazz = loader.loadClass(classPath);
-                if (!Module.class.isAssignableFrom(clazz)) continue;
-
-                Module module = (Module) clazz.getDeclaredConstructor().newInstance();
-                short id = module.getID();
-                if (modules.containsKey(id)) {
-                    log.error("Duplicate module ID: {}", id);
-                    continue;
-                }
-
-                modules.put(id, module);
-                log.debug("Loading module: {}", className);
-            }
-        } catch (Exception e) {
-            log.error("Error initializing modules", e);
-            throw new Exception("Error initializing modules", e);
-        }
-    }
-
     public static void handle(Teacher teacher) throws Exception {
+        HashMap<Short, Module> modules = ModuleManager.getModules();
+
         ByteBuffer buffer = ByteBuffer.allocate(2);
         teacher.getChannel().read(buffer);
         buffer.flip();

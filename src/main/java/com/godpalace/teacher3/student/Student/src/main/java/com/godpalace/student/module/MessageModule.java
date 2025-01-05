@@ -10,7 +10,7 @@ import java.nio.charset.StandardCharsets;
 public class MessageModule implements Module{
     @Override
     public short getID() {
-        return 0x03;
+        return 0x02;
     }
 
     @Override

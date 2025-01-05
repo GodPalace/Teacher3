@@ -29,7 +29,7 @@ public class Test {
             buffer.clear();
         }
 
-        Thread.sleep(1000);
+        Thread.sleep(500);
         channel.close();
     }
 }
