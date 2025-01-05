@@ -2,12 +2,9 @@ package com.godpalace.student;
 
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.*;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 @Slf4j
 public class NetworkCore {
@@ -59,10 +56,7 @@ public class NetworkCore {
     }
 
     public void start() {
-        new Thread(() -> {
-            log.info("Starting receiver");
-            runReceiver();
-        }).start();
+        new Thread(this::runReceiver).start();
     }
 
     private void addTeacher(Teacher teacher) throws ClosedChannelException {
@@ -94,7 +88,7 @@ public class NetworkCore {
                 }
 
                 selector.selectedKeys().clear();
-            } catch (IOException e) {
+            } catch (Exception e) {
                 log.error("Error while running receiver", e);
             }
         }

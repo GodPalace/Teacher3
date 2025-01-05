@@ -19,6 +19,9 @@ public class Main {
         // Initialize the database
         StudentDatabase.initialize();
 
+        // Initialize the modules
+        CommandProcessor.initialize();
+
         // Initialize the server
         Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
         while (interfaces.hasMoreElements()) {
