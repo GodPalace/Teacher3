@@ -9,7 +9,6 @@ import javax.swing.*;
 import java.awt.image.BufferedImage;
 import java.net.URL;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
 
 @Slf4j
 public class ScreenLockModule implements Module {

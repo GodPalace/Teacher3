@@ -1,5 +1,7 @@
 package com.godpalace.student.util;
 
+import lombok.extern.slf4j.Slf4j;
+
 import java.io.File;
 import java.net.URL;
 import java.net.URLClassLoader;
@@ -9,6 +11,7 @@ import java.util.List;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
+@Slf4j
 public final class PackageUtil {
     private PackageUtil() {
     }
@@ -66,6 +69,8 @@ public final class PackageUtil {
         List<String> myClassName = new ArrayList<>();
         File file = new File(filePath);
         File[] childFiles = file.listFiles();
+
+        if (childFiles == null) return myClassName;
         for (File childFile : childFiles) {
             if (childFile.isDirectory()) {
                 if (childPackage) {
@@ -126,9 +131,12 @@ public final class PackageUtil {
                     }
                 }
             }
+
+            jarFile.close();
         } catch (Exception e) {
-            e.printStackTrace();
+            log.error("getClassNameByJar error", e);
         }
+
         return myClassName;
     }
 
@@ -146,8 +154,7 @@ public final class PackageUtil {
     private static List<String> getClassNameByJars(URL[] urls, String packagePath, boolean childPackage) {
         List<String> myClassName = new ArrayList<>();
         if (urls != null) {
-            for (int i = 0; i < urls.length; i++) {
-                URL url = urls[i];
+            for (URL url : urls) {
                 String urlPath = url.getPath();
                 // 不必搜索classes文件夹
                 if (urlPath.endsWith("classes/")) {
