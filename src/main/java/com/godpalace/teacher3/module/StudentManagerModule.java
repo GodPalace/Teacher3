@@ -7,7 +7,7 @@ import javax.swing.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 
-public class StudentSelectModule implements Module {
+public class StudentManagerModule implements Module {
     @Override
     public short getID() {
         return 0x00;
@@ -15,7 +15,7 @@ public class StudentSelectModule implements Module {
 
     @Override
     public String getName() {
-        return "StudentSelectModule";
+        return "StudentManagerModule";
     }
 
     @Override
@@ -79,8 +79,11 @@ public class StudentSelectModule implements Module {
                 }
 
                 // 选择学生
-                StudentManager.selectStudent(Integer.parseInt(args[1]));
-                System.out.println("已选择学生: " + args[1]);
+                if (StudentManager.selectStudent(Integer.parseInt(args[1]))) {
+                    System.out.println("已选择学生: " + args[1]);
+                } else {
+                    System.out.println("未找到学生: " + args[1]);
+                }
             }
 
             case "deselect" -> {
@@ -90,8 +93,11 @@ public class StudentSelectModule implements Module {
                 }
 
                 // 取消选择学生
-                StudentManager.deselectStudent(Integer.parseInt(args[1]));
-                System.out.println("已取消选择学生: " + args[1]);
+                if (StudentManager.deselectStudent(Integer.parseInt(args[1]))) {
+                    System.out.println("已取消选择学生: " + args[1]);
+                } else {
+                    System.out.println("未找到学生: " + args[1]);
+                }
             }
 
             case "clear" -> {
@@ -114,8 +120,12 @@ public class StudentSelectModule implements Module {
                 // 列出所有学生的状态
                 System.out.println("所有学生:");
                 for (Student student : StudentManager.getStudents()) {
+                    boolean isAlive = student.isAlive();
+
                     System.out.println("ID: " + student.getId() + " - "
-                            + (student.isAlive() ? "在线" : "离线"));
+                            + (isAlive ? "在线" : "离线"));
+
+                    if (!isAlive) StudentManager.removeStudent(student);
                 }
             }
 

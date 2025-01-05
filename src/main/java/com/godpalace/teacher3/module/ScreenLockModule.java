@@ -34,12 +34,12 @@ public class ScreenLockModule implements Module {
 
     @Override
     public String getName() {
-        return (isLocked? "取消黑屏" : "开启黑屏");
+        return "屏幕锁定";
     }
 
     @Override
     public String getTooltip() {
-        return "屏幕锁定";
+        return "使学生屏幕黑屏";
     }
 
     @Override
@@ -110,6 +110,7 @@ public class ScreenLockModule implements Module {
 
                 try {
                     sendCmd(student, data);
+                    isLocked = !isLocked;
                 } catch (Exception ex) {
                     log.error("Failed to execute command", ex);
                 }

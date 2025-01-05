@@ -62,25 +62,15 @@ public class TeacherCmd {
                 if (modules.containsKey(cmd)) {
                     Module module = modules.get(cmd);
 
-                    if (module.isExecuteWithStudent()) {
-                        if (StudentManager.getSelectedStudents().size() > 1 &&
-                                !module.isSupportMultiSelection()) {
-                            System.out.println("该模块不支持多选");
-                            continue;
-                        }
+                    if (module.isExecuteWithStudent() &&
+                            StudentManager.getSelectedStudents().size() > 1 &&
+                            !module.isSupportMultiSelection()) {
 
-                        for (Student student : StudentManager.getSelectedStudents()) {
-                            if (student.isAlive()) {
-                                module.cmd(args);
-                            } else {
-                                System.out.println(student.getName() + "已离线");
-                                StudentManager.deselectStudent(student);
-                                StudentManager.removeStudent(student);
-                            }
-                        }
-                    } else {
-                        module.cmd(args);
+                        System.out.println("该模块不支持多选");
+                        continue;
                     }
+
+                    module.cmd(args);
                 } else {
                     System.out.println("未知命令: " + cmd);
                 }

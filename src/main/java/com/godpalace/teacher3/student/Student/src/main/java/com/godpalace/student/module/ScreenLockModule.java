@@ -7,7 +7,7 @@ import java.awt.image.BufferedImage;
 import java.nio.ByteBuffer;
 
 public class ScreenLockModule implements Module {
-    protected static final Frame lockFrame = new Frame();
+    private static final Frame lockFrame = new Frame();
 
     static {
         lockFrame.setUndecorated(true);
@@ -16,7 +16,7 @@ public class ScreenLockModule implements Module {
         lockFrame.setBackground(Color.BLACK);
         lockFrame.setSize(Toolkit.getDefaultToolkit().getScreenSize());
         lockFrame.setCursor(Toolkit.getDefaultToolkit().createCustomCursor(
-                new BufferedImage(16, 16, BufferedImage.TYPE_INT_RGB),
+                new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB),
                 new Point(0, 0), "invisible cursor"));
     }
 

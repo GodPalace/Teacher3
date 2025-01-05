@@ -15,10 +15,12 @@ public class StudentManager {
     private static final CopyOnWriteArrayList<Student> selectedStudents = new CopyOnWriteArrayList<>();
 
     public static Student getFirstStudent() {
+        if (students.isEmpty()) return null;
         return students.get(0);
     }
 
     public static Student getFirstSelectedStudent() {
+        if (selectedStudents.isEmpty()) return null;
         return selectedStudents.get(0);
     }
 
@@ -26,42 +28,60 @@ public class StudentManager {
         students.add(student);
     }
 
-    public static void removeStudent(int id) {
+    public static boolean removeStudent(int id) {
         for (Student student : students) {
             if (student.getId() == id) {
                 students.remove(student);
-                return;
+                deselectStudent(student);
+                return true;
             }
         }
+
+        return false;
     }
 
     public static void removeStudent(Student student) {
+        if (!students.contains(student))
+            return;
+
         students.remove(student);
+        deselectStudent(student);
     }
 
-    public static void selectStudent(int id) {
+    public static boolean selectStudent(int id) {
         for (Student student : students) {
             if (student.getId() == id) {
                 selectedStudents.add(student);
-                return;
+                return true;
             }
         }
+
+        return false;
     }
 
-    public static void selectStudent(Student student) {
+    public static boolean selectStudent(Student student) {
+        if (!students.contains(student))
+            return false;
+
         selectedStudents.add(student);
+        return true;
     }
 
-    public static void deselectStudent(int id) {
+    public static boolean deselectStudent(int id) {
         for (Student student : selectedStudents) {
             if (student.getId() == id) {
                 selectedStudents.remove(student);
-                return;
+                return true;
             }
         }
+
+        return false;
     }
 
     public static void deselectStudent(Student student) {
+        if (!selectedStudents.contains(student))
+            return;
+
         selectedStudents.remove(student);
     }
 
@@ -70,7 +90,11 @@ public class StudentManager {
     }
 
     public static Student connect(String ip) throws IOException {
-        SocketChannel channel = SocketChannel.open(new InetSocketAddress(ip, 37000));
+        InetSocketAddress address = new InetSocketAddress(ip, 37000);
+        if (!address.getAddress().isReachable(3000))
+            throw new IOException("Cannot connect to " + ip);
+
+        SocketChannel channel = SocketChannel.open(address);
         Student student = new Student(channel);
         students.add(student);
 
