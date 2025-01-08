@@ -18,7 +18,7 @@ public class LightScreenModule implements Module {
 
     @Override
     public String getName() {
-        return "闪屏";
+        return "闪屏模块";
     }
 
     @Override
@@ -67,7 +67,7 @@ public class LightScreenModule implements Module {
                 System.out.println("学生" + student.getName() + "闪屏失败");
             }
 
-            System.out.println("闪屏成功!");
+            System.out.println("闪屏完成!");
         }
     }
 

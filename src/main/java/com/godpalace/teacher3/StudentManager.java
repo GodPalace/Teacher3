@@ -85,8 +85,23 @@ public class StudentManager {
         selectedStudents.remove(student);
     }
 
+    public static void selectAllStudents() {
+        clearSelectedStudents();
+        selectedStudents.addAll(students);
+    }
+
     public static void clearSelectedStudents() {
         selectedStudents.clear();
+    }
+
+    public static Student getStudent(int id) {
+        for (Student student : students) {
+            if (student.getId() == id) {
+                return student;
+            }
+        }
+
+        return null;
     }
 
     public static Student connect(String ip) throws IOException {

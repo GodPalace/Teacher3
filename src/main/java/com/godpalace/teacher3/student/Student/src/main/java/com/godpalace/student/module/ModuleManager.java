@@ -1,5 +1,6 @@
 package com.godpalace.student.module;
 
+import com.godpalace.student.ThreadPoolManager;
 import com.godpalace.student.util.PackageUtil;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -22,16 +23,29 @@ public class ModuleManager {
 
                 Class<?> clazz = loader.loadClass(classPath);
                 if (!Module.class.isAssignableFrom(clazz)) continue;
-
                 Module module = (Module) clazz.getDeclaredConstructor().newInstance();
-                short id = module.getID();
-                if (modules.containsKey(id)) {
-                    log.error("Duplicate module ID: {}", id);
-                    continue;
-                }
 
-                modules.put(id, module);
-                log.debug("Loading module: {}", className);
+                if (!module.isLocalModule()) {
+                    short id = module.getID();
+
+                    if (modules.containsKey(id)) {
+                        log.error("Duplicate module ID: {}", id);
+                        continue;
+                    }
+
+                    modules.put(id, module);
+                    log.debug("Loaded module: {}", className);
+                } else {
+                    ThreadPoolManager.getExecutor().execute(() -> {
+                        try {
+                            module.execute(null, null);
+                        } catch (Exception e) {
+                            log.error("Error initializing module: {}", className, e);
+                        }
+                    });
+
+                    log.debug("Loaded local module: {}", className);
+                }
             }
         } catch (Exception e) {
             log.error("Error initializing modules", e);

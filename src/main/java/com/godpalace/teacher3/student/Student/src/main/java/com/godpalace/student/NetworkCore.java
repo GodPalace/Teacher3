@@ -1,10 +1,13 @@
 package com.godpalace.student;
 
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.channels.*;
+import java.util.ArrayList;
 
 @Slf4j
 public class NetworkCore {
@@ -18,12 +21,20 @@ public class NetworkCore {
         }
     }
 
+    @Getter
+    private static final ArrayList<Teacher> teachers = new ArrayList<>();
+
+    @Getter
+    private final InetAddress addr;
     private final Selector selector;
     private final ServerSocketChannel positiveServerChannel;
 
     private boolean isClosed = false;
 
-    public NetworkCore(InetSocketAddress address) throws IOException {
+    public NetworkCore(InetAddress addr, int port) throws IOException {
+        InetSocketAddress address = new InetSocketAddress(addr, port);
+        this.addr = addr;
+
         positiveServerChannel = ServerSocketChannel.open();
         positiveServerChannel.configureBlocking(false);
         positiveServerChannel.bind(address);
@@ -32,34 +43,43 @@ public class NetworkCore {
     }
 
     public static void manage() {
-        new Thread(() -> {
-            try {
-                while (true) {
+        ThreadPoolManager.getExecutor().execute(() -> {
+            while (true) {
+                try {
                     allSelector.select();
 
                     for (SelectionKey key : allSelector.selectedKeys()) {
                         if (key.isAcceptable()) {
                             NetworkCore core = (NetworkCore) key.attachment();
-                            SocketChannel channel = core.positiveServerChannel.accept();
-                            core.addTeacher(new Teacher(channel));
 
-                            log.info("New teacher connected: {}", channel.getRemoteAddress());
+                            SocketChannel channel;
+                            while ((channel = core.positiveServerChannel.accept()) == null) {
+                                Thread.yield();
+                            }
+
+                            Teacher teacher = new Teacher(channel);
+                            if (!NetworkCore.getTeachers().contains(teacher)) {
+                                core.addTeacher(teacher);
+                                log.info("New teacher connected: {}", channel.getRemoteAddress());
+                            }
                         }
                     }
 
                     allSelector.selectedKeys().clear();
+                } catch (IOException e) {
+                    log.error("Error while managing selector", e);
+                    break;
                 }
-            } catch (IOException e) {
-                log.error("Error while managing selector", e);
             }
-        }).start();
+        });
     }
 
     public void start() {
         new Thread(this::runReceiver).start();
     }
 
-    private void addTeacher(Teacher teacher) throws ClosedChannelException {
+    public void addTeacher(Teacher teacher) throws ClosedChannelException {
+        teachers.add(teacher);
         teacher.getChannel()
                 .register(selector, SelectionKey.OP_READ)
                 .attach(teacher);

@@ -17,7 +17,7 @@ public interface Module {
 
     JButton getGuiButton();
     String getCommand();
-    void cmd(String[] args);
+    void cmd(String[] args) throws IOException;
 
     boolean isSupportMultiSelection();
     boolean isExecuteWithStudent();
@@ -31,10 +31,14 @@ public interface Module {
     }
 
     default void sendCmd(Student student, ByteBuffer data) throws IOException {
-        ByteBuffer buffer = ByteBuffer.allocate(6 + data.remaining());
+        sendCmd(student, data.array());
+    }
+
+    default void sendCmd(Student student, byte[] bytes) throws IOException {
+        ByteBuffer buffer = ByteBuffer.allocate(6 + bytes.length);
         buffer.putShort(getID());
-        buffer.putInt(data.remaining());
-        buffer.put(data);
+        buffer.putInt(bytes.length);
+        buffer.put(bytes);
         buffer.flip();
         student.getChannel().write(buffer);
     }

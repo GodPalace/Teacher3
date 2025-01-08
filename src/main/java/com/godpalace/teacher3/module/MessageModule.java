@@ -8,6 +8,7 @@ import javax.swing.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 
 @Slf4j
 public class MessageModule implements Module {
@@ -18,7 +19,7 @@ public class MessageModule implements Module {
 
     @Override
     public String getName() {
-        return "发送消息";
+        return "消息发送模块";
     }
 
     @Override
@@ -43,7 +44,7 @@ public class MessageModule implements Module {
             return;
         }
 
-        byte[] bytes = args[0].getBytes();
+        byte[] bytes = args[0].trim().getBytes();
         ByteBuffer data = ByteBuffer.allocate(bytes.length);
         data.put(bytes);
         data.flip();

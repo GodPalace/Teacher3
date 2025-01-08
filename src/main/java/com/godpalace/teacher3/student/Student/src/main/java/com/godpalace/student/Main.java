@@ -1,27 +1,30 @@
 package com.godpalace.student;
 
 import com.godpalace.student.module.ModuleManager;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.Inet4Address;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.util.ArrayList;
 import java.util.Enumeration;
 
 @Slf4j
 public class Main {
-    public static final int MAIN_PORT = 37000;
+    public static final int
+            MAIN_PORT = 37000,
+            SCAN_PORT = 37001;
 
-    public static ArrayList<NetworkCore> cores = new ArrayList<>();
+    @Getter
+    private static final ArrayList<NetworkCore> cores = new ArrayList<>();
+
+    @Getter
+    private static final ArrayList<Interface> addrInterfaces = new ArrayList<>();
 
     private static void initializeAll() throws Exception {
         // Initialize the database
         StudentDatabase.initialize();
-
-        // Initialize the modules
-        ModuleManager.initialize();
 
         // Initialize the server
         Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
@@ -32,17 +35,20 @@ public class Main {
             while (addresses.hasMoreElements()) {
                 InetAddress address = addresses.nextElement();
                 if (!address.isLoopbackAddress() && address instanceof Inet4Address) {
-                    InetSocketAddress socketAddress = new InetSocketAddress(address, MAIN_PORT);
+                    addrInterfaces.add(new Interface(networkInterface, address));
 
-                    NetworkCore core = new NetworkCore(socketAddress);
+                    NetworkCore core = new NetworkCore(address, MAIN_PORT);
                     core.start();
                     cores.add(core);
 
-                    log.debug("Initialized core at {}", socketAddress);
+                    log.debug("Initialized core at {}", address.getHostAddress());
                 }
             }
         }
         NetworkCore.manage();
+
+        // Initialize the modules
+        ModuleManager.initialize();
     }
 
     public static void main(String[] args) {

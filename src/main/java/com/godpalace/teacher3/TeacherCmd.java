@@ -4,6 +4,7 @@ import com.godpalace.teacher3.module.Module;
 import com.godpalace.teacher3.module.ModuleManager;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Scanner;
 
@@ -15,10 +16,13 @@ public class TeacherCmd {
 
     static {
         helpString.append("命令列表:\n");
+        helpString.append("  help - 显示命令列表\n");
+        helpString.append("  exit - 退出教师端\n");
+        helpString.append("\n");
 
         for (Module module : ModuleManager.getModules().values()) {
             helpString.append("  ")
-                    .append(module.getCommand())
+                    .append(module.getCommand().trim())
                     .append(" - ").append(module.getTooltip()).append("\n");
         }
     }
@@ -35,7 +39,7 @@ public class TeacherCmd {
         while (true) {
             try {
                 System.out.print("> ");
-                String input = scanner.nextLine();
+                String input = scanner.nextLine().trim();
                 if (input.isEmpty()) continue;
 
                 switch (input) {
@@ -70,12 +74,18 @@ public class TeacherCmd {
                         continue;
                     }
 
-                    module.cmd(args);
+                    try {
+                        module.cmd(args);
+                    } catch (IOException e) {
+                        System.out.println("命令执行失败: " + e.getMessage());
+                    }
                 } else {
                     System.out.println("未知命令: " + cmd);
                 }
             } catch (Exception e) {
                 System.out.println("教师端发生错误: " + e.getMessage());
+                log.error("TeacherCmd error", e);
+
                 System.exit(-1);
             }
         }

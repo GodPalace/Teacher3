@@ -34,7 +34,7 @@ public class ScreenLockModule implements Module {
 
     @Override
     public String getName() {
-        return "屏幕锁定";
+        return "屏幕锁定模块";
     }
 
     @Override
@@ -64,7 +64,7 @@ public class ScreenLockModule implements Module {
             case "on":
                 try {
                     for (Student student : StudentManager.getSelectedStudents()) {
-                        ByteBuffer data = ByteBuffer.allocate(1);
+                        ByteBuffer data = ByteBuffer.allocate(2);
                         data.putChar('1');
                         data.flip();
 
@@ -103,6 +103,7 @@ public class ScreenLockModule implements Module {
 
         button.addActionListener(e -> {
             Student student = StudentManager.getFirstSelectedStudent();
+
             if (student != null) {
                 ByteBuffer data = ByteBuffer.allocate(1);
                 data.putChar((isLocked? '0' : '1'));
@@ -122,7 +123,7 @@ public class ScreenLockModule implements Module {
 
     @Override
     public boolean isSupportMultiSelection() {
-        return false;
+        return true;
     }
 
     @Override

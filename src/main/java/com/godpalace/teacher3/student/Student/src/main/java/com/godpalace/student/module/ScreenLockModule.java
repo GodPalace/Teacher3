@@ -35,4 +35,9 @@ public class ScreenLockModule implements Module {
         char c = buffer.getChar();
         lockFrame.setVisible(c == '1');
     }
+
+    @Override
+    public boolean isLocalModule() {
+        return false;
+    }
 }

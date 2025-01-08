@@ -38,4 +38,9 @@ public class LightScreenModule implements Module {
         Thread.sleep(100);
         lightFrame.setVisible(false);
     }
+
+    @Override
+    public boolean isLocalModule() {
+        return false;
+    }
 }

@@ -4,6 +4,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
 
 @Slf4j
@@ -20,7 +21,7 @@ public class Student {
     @Getter
     private final int id;
 
-    protected Student(SocketChannel channel) throws IOException {
+    public Student(SocketChannel channel) throws IOException {
         this.channel = channel;
         this.channel.configureBlocking(false);
 
@@ -51,5 +52,19 @@ public class Student {
 
     public boolean isClosed() {
         return isClosed;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj instanceof Student student) {
+            try {
+                return ((InetSocketAddress) this.getChannel().getRemoteAddress()).getAddress()
+                        .equals(((InetSocketAddress) student.getChannel().getRemoteAddress()).getAddress());
+            } catch (IOException e) {
+                return false;
+            }
+        } else {
+            return false;
+        }
     }
 }
