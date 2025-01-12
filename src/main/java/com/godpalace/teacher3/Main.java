@@ -8,8 +8,8 @@ import java.awt.*;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
-import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashMap;
 
 @Slf4j
 public class Main {
@@ -18,7 +18,10 @@ public class Main {
             SCAN_PORT = 37001;
 
     @Getter
-    private static final ArrayList<Interface> addresses = new ArrayList<>();
+    private static final HashMap<InetAddress, NetworkInterface> addresses = new HashMap<>();
+
+    @Getter
+    private static boolean isHeadless;
 
     private static void initializeAll() throws Exception {
         // Initialize the database
@@ -34,7 +37,7 @@ public class Main {
                 InetAddress address = addresses.nextElement();
 
                 if (!address.isLoopbackAddress() && address.isSiteLocalAddress()) {
-                    Main.addresses.add(new Interface(networkInterface, address));
+                    Main.addresses.put(address, networkInterface);
 
                     // Register a network listener for the address
                     NetworkListener listener = new NetworkListener(
@@ -46,11 +49,11 @@ public class Main {
             }
         }
 
-        // Initialize modules
-        ModuleManager.initialize();
-
         // Initialize the Listener
         NetworkListener.manage();
+
+        // Initialize modules
+        ModuleManager.initialize();
     }
 
     public static void main(String[] args) {
@@ -65,13 +68,15 @@ public class Main {
 
         GraphicsEnvironment environment = GraphicsEnvironment.getLocalGraphicsEnvironment();
 
-        if (args.length == 0 && !environment.isHeadlessInstance())
+        if (args.length == 0 && !environment.isHeadlessInstance()) {
+            isHeadless = false;
             guiLunch();
-        else if (args[0].equals("--cmd") || args[0].equals("-c") || environment.isHeadlessInstance())
+        } else if (args[0].equals("--cmd") || args[0].equals("-c") || environment.isHeadlessInstance()) {
+            isHeadless = true;
             cmdLunch();
-        else {
-            System.out.println("未知的启动参数, 请使用 --cmd 或 -c 启动命令行模式");
-            System.exit(-1);
+        } else {
+            System.out.println("未知的启动参数, 请使用 --cmd 或 -c 启动命令行模式或者直接运行程序");
+            System.exit(0);
         }
     }
 
@@ -80,8 +85,6 @@ public class Main {
 
     private static void cmdLunch() {
         System.out.println("======命令行模式启动成功======");
-
-        TeacherCmd cmd = new TeacherCmd();
-        cmd.start();
+        new TeacherCmd(System.in, System.out).start();
     }
 }

@@ -9,6 +9,7 @@ import java.net.InetAddress;
 import java.net.NetworkInterface;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashMap;
 
 @Slf4j
 public class Main {
@@ -19,8 +20,12 @@ public class Main {
     @Getter
     private static final ArrayList<NetworkCore> cores = new ArrayList<>();
 
+    public static NetworkCore getDefaultCore() {
+        return cores.get(0);
+    }
+
     @Getter
-    private static final ArrayList<Interface> addrInterfaces = new ArrayList<>();
+    private static final HashMap<InetAddress, NetworkInterface> addresses = new HashMap<>();
 
     private static void initializeAll() throws Exception {
         // Initialize the database
@@ -35,7 +40,7 @@ public class Main {
             while (addresses.hasMoreElements()) {
                 InetAddress address = addresses.nextElement();
                 if (!address.isLoopbackAddress() && address instanceof Inet4Address) {
-                    addrInterfaces.add(new Interface(networkInterface, address));
+                    Main.addresses.put(address, networkInterface);
 
                     NetworkCore core = new NetworkCore(address, MAIN_PORT);
                     core.start();

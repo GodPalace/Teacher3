@@ -8,7 +8,6 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 public class ShellModule implements Module {
@@ -56,25 +55,22 @@ public class ShellModule implements Module {
         Arrays.stream(args).forEach(arg -> sb.append(arg).append(" "));
         String cmd = sb.toString().trim();
 
+        // 选择第一个选中的学生
         Student student = StudentManager.getFirstSelectedStudent();
-        if (student == null) {
-            System.out.println("未选择学生");
-            return;
-        }
+        if (student == null) return;
 
         byte[] cmdBytes = cmd.getBytes();
         ByteBuffer sendBuffer = ByteBuffer.allocate(2 + cmdBytes.length);
         sendBuffer.putShort((short) 0);
         sendBuffer.put(cmdBytes);
 
-        sendCmd(student, sendBuffer);
+        sendRequest(student, sendBuffer);
         System.out.println("命令已发送, 正在等待执行结果...");
 
         while (true) {
             ByteBuffer buffer = ByteBuffer.allocate(4);
             while (student.getChannel().read(buffer) != 4) Thread.yield();
             buffer.flip();
-
             int dataLength = buffer.getInt();
 
             buffer = ByteBuffer.allocate(dataLength);

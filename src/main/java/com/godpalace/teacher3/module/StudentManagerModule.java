@@ -1,18 +1,26 @@
 package com.godpalace.teacher3.module;
 
-import com.godpalace.teacher3.Interface;
 import com.godpalace.teacher3.Main;
+import com.godpalace.teacher3.NetworkListener;
 import com.godpalace.teacher3.Student;
 import com.godpalace.teacher3.StudentManager;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import java.awt.image.BufferedImage;
-import java.io.IOException;
-import java.net.DatagramPacket;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.MulticastSocket;
+import java.io.*;
+import java.net.*;
+import java.nio.charset.StandardCharsets;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+import java.util.zip.ZipOutputStream;
+
+/*
+ * 数据文件格式:
+ * 4字节: IP长度
+ * IP长度字节: IP地址
+ * 2字节: 端口号
+ */
 
 @Slf4j
 public class StudentManagerModule implements Module {
@@ -48,10 +56,13 @@ public class StudentManagerModule implements Module {
 
     private static void printHelp() {
         System.out.println("""
-                    命令格式错误, 请使用格式: student [option]
+                    学生管理模块命令格式: student [option]
                     
                     option:
                       help - 显示此帮助信息
+                    
+                      build - 构建学生端程序
+                      build [listener_id] - 构建学生端程序(启用反向连接)
                     
                       scan - 扫描学生端
                       connect [ip] - 连接到学生端
@@ -83,6 +94,103 @@ public class StudentManagerModule implements Module {
                 printHelp();
             }
 
+            case "build" -> {
+                if (args.length > 2) {
+                    System.out.println("命令格式错误, 请使用格式: student build");
+                }
+
+                int listenerId;
+                int listenerIpLength = 0;
+                String listenerIp = "";
+                short listenerPort = 0;
+
+                if (args.length == 2) {
+                    listenerId = Integer.parseInt(args[1]);
+
+                    if (!NetworkListener.getListeners().containsKey(listenerId)) {
+                        System.out.println("未找到监听器: " + listenerId);
+                        return;
+                    }
+
+                    NetworkListener listener = NetworkListener.getListeners().get(listenerId);
+                    listenerIp = listener.getAddress().getAddress().getHostAddress();
+                    listenerIpLength = listenerIp.length();
+                    listenerPort = (short) listener.getAddress().getPort();
+                }
+
+                System.out.println("正在构建学生端程序...");
+
+                // 读取资源文件并写入临时文件
+                File tempFile = new File(System.getenv("TEMP") + "\\Student.jar");
+                File file = new File(System.currentTimeMillis() + "-Student.jar");
+
+                URL url = Main.class.getResource("/Student.jar");
+                if (url == null) {
+                    System.out.println("未找到资源文件, 无法构建学生端程序");
+                    return;
+                }
+
+                // 输出到临时文件
+                InputStream in = url.openStream();
+                FileOutputStream out = new FileOutputStream(tempFile);
+                byte[] buffer = new byte[10240];
+                int len;
+                while ((len = in.read(buffer)) != -1) {
+                    out.write(buffer, 0, len);
+                }
+                out.close();
+
+                // 写入临时数据
+                ZipInputStream zipIn = new ZipInputStream(new FileInputStream(tempFile));
+                ZipOutputStream zipOut = new ZipOutputStream(new FileOutputStream(file));
+                ZipEntry entry = zipIn.getNextEntry();
+
+                while (entry != null) {
+                    zipOut.putNextEntry(new ZipEntry(entry.getName()));
+                    buffer = new byte[10240];
+
+                    while ((len = zipIn.read(buffer)) != -1) {
+                        zipOut.write(buffer, 0, len);
+                    }
+
+                    zipOut.closeEntry();
+                    entry = zipIn.getNextEntry();
+                }
+
+                // 写入反向连接配置
+                if (args.length == 2) {
+                    try {
+                        byte[] configData = new byte[listenerIpLength + 3];
+
+                        // IP地址长度
+                        configData[0] = (byte) listenerIpLength;
+
+                        // IP地址
+                        byte[] ipBytes = listenerIp.getBytes(StandardCharsets.UTF_8);
+                        System.arraycopy(ipBytes, 0, configData, 1, ipBytes.length);
+
+                        // 端口号
+                        configData[listenerIpLength + 1] = (byte) (listenerPort & 0xFF);
+                        configData[listenerIpLength + 2] = (byte) ((listenerPort >> 8) & 0xFF);
+
+                        // 写入配置数据
+                        zipOut.putNextEntry(new ZipEntry("ReverseConnectConfig.data"));
+                        zipOut.write(configData);
+                        zipOut.closeEntry();
+                    } catch (NumberFormatException e) {
+                        System.out.println("命令格式错误, 请使用格式: student build [listener_id]");
+                        return;
+                    }
+                }
+
+                zipOut.close();
+                zipIn.close();
+                tempFile.delete();
+
+                System.out.println("构建成功!");
+                in.close();
+            }
+
             case "scan" -> {
                 if (args.length != 1) {
                     System.out.println("命令格式错误, 请使用格式: student scan");
@@ -90,12 +198,12 @@ public class StudentManagerModule implements Module {
                 }
 
                 // 扫描学生端
-                for (Interface anInterface : Main.getAddresses()) {
+                for (NetworkInterface anInterface : Main.getAddresses().values()) {
                     InetSocketAddress group = new InetSocketAddress(
                             InetAddress.getByName("224.3.7.1"), Main.SCAN_PORT);
 
                     try (MulticastSocket socket = new MulticastSocket()) {
-                        socket.joinGroup(group, anInterface.iface());
+                        socket.joinGroup(group, anInterface);
 
                         byte[] data = new byte[1];
                         data[0] = (byte) 1;
@@ -103,8 +211,7 @@ public class StudentManagerModule implements Module {
                         DatagramPacket packet = new DatagramPacket(data, data.length, group);
                         socket.send(packet);
 
-                        System.out.println("正在扫描: " + anInterface.addr()
-                                + "/" + anInterface.iface().getName());
+                        System.out.println("正在扫描网卡: " + anInterface.getName());
                     } catch (IOException e) {
                         System.out.println("扫描失败: " + e.getMessage());
                     }
@@ -220,7 +327,8 @@ public class StudentManagerModule implements Module {
                 for (Student student : StudentManager.getStudents()) {
                     boolean isAlive = student.isAlive();
 
-                    System.out.println("ID: " + student.getId() + " - "
+                    System.out.println("主机名: "+ student.getName()
+                            + " ID: " + student.getId() + " - "
                             + (isAlive ? "在线" : "离线"));
 
                     if (!isAlive) StudentManager.removeStudent(student);

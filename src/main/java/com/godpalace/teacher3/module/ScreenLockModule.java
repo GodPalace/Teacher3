@@ -68,7 +68,7 @@ public class ScreenLockModule implements Module {
                         data.putChar('1');
                         data.flip();
 
-                        sendCmd(student, data);
+                        sendRequest(student, data);
                     }
                 } catch (Exception e) {
                     log.error("Failed to lock screen", e);
@@ -84,7 +84,7 @@ public class ScreenLockModule implements Module {
                         data.putChar('0');
                         data.flip();
 
-                        sendCmd(student, data);
+                        sendRequest(student, data);
                     }
                 } catch (Exception e) {
                     log.error("Failed to unlock screen", e);
@@ -110,7 +110,7 @@ public class ScreenLockModule implements Module {
                 data.flip();
 
                 try {
-                    sendCmd(student, data);
+                    sendRequest(student, data);
                     isLocked = !isLocked;
                 } catch (Exception ex) {
                     log.error("Failed to execute command", ex);

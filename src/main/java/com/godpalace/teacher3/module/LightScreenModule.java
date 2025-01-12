@@ -38,7 +38,7 @@ public class LightScreenModule implements Module {
         button.addActionListener(e -> {
             for (Student student : StudentManager.getSelectedStudents()) {
                 try {
-                    sendCmd(student, ByteBuffer.allocate(0));
+                    sendRequest(student, ByteBuffer.allocate(0));
                 } catch (IOException ex) {
                     log.error("学生{}闪屏失败", student.getName(), ex);
                 }
@@ -62,7 +62,7 @@ public class LightScreenModule implements Module {
 
         for (Student student : StudentManager.getSelectedStudents()) {
             try {
-                sendCmd(student, ByteBuffer.allocate(0));
+                sendRequest(student, ByteBuffer.allocate(0));
             } catch (IOException ex) {
                 System.out.println("学生" + student.getName() + "闪屏失败");
             }

@@ -10,6 +10,8 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 public interface Module {
+    int RESPONSE_HEAD_SIZE = 4;
+
     short getID();
     String getName();
     String getTooltip();
@@ -30,11 +32,11 @@ public interface Module {
         return button;
     }
 
-    default void sendCmd(Student student, ByteBuffer data) throws IOException {
-        sendCmd(student, data.array());
+    default void sendRequest(Student student, ByteBuffer data) throws IOException {
+        sendRequest(student, data.array());
     }
 
-    default void sendCmd(Student student, byte[] bytes) throws IOException {
+    default void sendRequest(Student student, byte[] bytes) throws IOException {
         ByteBuffer buffer = ByteBuffer.allocate(6 + bytes.length);
         buffer.putShort(getID());
         buffer.putInt(bytes.length);

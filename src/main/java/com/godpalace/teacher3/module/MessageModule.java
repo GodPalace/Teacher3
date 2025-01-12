@@ -8,7 +8,6 @@ import javax.swing.*;
 import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 
 @Slf4j
 public class MessageModule implements Module {
@@ -52,7 +51,7 @@ public class MessageModule implements Module {
         int count = 0;
         for (Student student : StudentManager.getSelectedStudents()) {
             try {
-                sendCmd(student, data);
+                sendRequest(student, data);
                 count++;
             } catch (IOException ex) {
                 log.error("发送消息到学生[{}]失败", student.getName(), ex);
@@ -80,7 +79,7 @@ public class MessageModule implements Module {
             int count = 0;
             for (Student student : StudentManager.getSelectedStudents()) {
                 try {
-                    sendCmd(student, data);
+                    sendRequest(student, data);
                     count++;
                 } catch (IOException ex) {
                     log.error("发送消息到学生[{}]失败", student.getName(), ex);

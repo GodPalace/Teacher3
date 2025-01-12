@@ -40,7 +40,7 @@ public class NetworkListener {
         ThreadPoolManager.getExecutor().execute(() -> {
             while (true) {
                 try {
-                    selector.select(3000);
+                    selector.select(1500);
 
                     for (SelectionKey key : selector.selectedKeys()) {
                         if (key.isAcceptable()) {

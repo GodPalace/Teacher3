@@ -1,8 +1,10 @@
 package com.godpalace.student;
 
 import lombok.Getter;
+import lombok.Setter;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
 
@@ -18,8 +20,7 @@ public class Teacher {
     public Teacher(SocketChannel channel) throws IOException {
         this.channel = channel;
         this.channel.configureBlocking(false);
-
-        this.ip = channel.socket().getInetAddress().getHostAddress();
+        this.ip = ((InetSocketAddress) channel.getRemoteAddress()).getAddress().getHostAddress();
     }
 
     public boolean isAlive() {

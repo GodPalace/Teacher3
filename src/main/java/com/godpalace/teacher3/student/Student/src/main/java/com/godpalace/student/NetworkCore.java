@@ -58,6 +58,7 @@ public class NetworkCore {
                             }
 
                             Teacher teacher = new Teacher(channel);
+
                             if (!NetworkCore.getTeachers().contains(teacher)) {
                                 core.addTeacher(teacher);
                                 log.info("New teacher connected: {}", channel.getRemoteAddress());
@@ -103,7 +104,12 @@ public class NetworkCore {
                             continue;
                         }
 
-                        CommandProcessor.handle(teacher);
+                        try {
+                            CommandProcessor.handle(teacher);
+                        } catch (Exception e) {
+                            log.error("Error while handling command", e);
+                            selector.selectedKeys().remove(key);
+                        }
                     }
                 }
 

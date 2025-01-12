@@ -24,7 +24,6 @@ public class Student {
     public Student(SocketChannel channel) throws IOException {
         this.channel = channel;
         this.channel.configureBlocking(false);
-
         name = channel.getRemoteAddress().toString();
         id = idCounter++;
     }
