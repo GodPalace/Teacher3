@@ -1,10 +1,8 @@
 package com.godpalace.student;
 
 import lombok.Getter;
-import lombok.Setter;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.channels.SocketChannel;
 

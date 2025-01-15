@@ -2,6 +2,7 @@ package com.godpalace.teacher3.module;
 
 import com.godpalace.teacher3.Student;
 import com.godpalace.teacher3.StudentManager;
+import lombok.extern.slf4j.Slf4j;
 
 import javax.swing.*;
 import java.awt.*;
@@ -10,6 +11,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
+@Slf4j
 public class ShellModule implements Module {
     @Override
     public short getID() {
@@ -63,13 +65,26 @@ public class ShellModule implements Module {
         ByteBuffer sendBuffer = ByteBuffer.allocate(2 + cmdBytes.length);
         sendBuffer.putShort((short) 0);
         sendBuffer.put(cmdBytes);
-
+        sendBuffer.flip();
         sendRequest(student, sendBuffer);
-        System.out.println("命令已发送, 正在等待执行结果...");
 
         while (true) {
+            int count = 0;
+
             ByteBuffer buffer = ByteBuffer.allocate(4);
-            while (student.getChannel().read(buffer) != 4) Thread.yield();
+            while (student.getChannel().read(buffer) != 4) {
+                try {
+                    Thread.sleep(1000);
+
+                    count++;
+                    if (count > 10) {
+                        System.out.println("获取命令结果超时");
+                        return;
+                    }
+                } catch (InterruptedException e) {
+                    log.error("线程中断", e);
+                }
+            }
             buffer.flip();
             int dataLength = buffer.getInt();
 

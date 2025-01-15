@@ -56,7 +56,7 @@ public class LightScreenModule implements Module {
     @Override
     public void cmd(String[] args) {
         if (args.length != 0) {
-            System.out.println("闪屏命令无参数!");
+            System.out.println("命令格式错误, 请使用格式: light-screen");
             return;
         }
 

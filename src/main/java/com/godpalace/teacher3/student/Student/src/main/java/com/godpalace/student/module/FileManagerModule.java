@@ -111,6 +111,7 @@ public class FileManagerModule implements Module {
 
                         objOut.flush();
                         gzipOut.finish();
+                        gzipOut.flush();
 
                         objOut.close();
                         gzipOut.close();
@@ -294,7 +295,7 @@ public class FileManagerModule implements Module {
         responseData.putShort(response);
         responseData.put(responseBytes.toByteArray());
         responseData.flip();
-        sendResponse(teacher.getChannel(), responseData);
+        sendResponseWithSize(teacher.getChannel(), responseData);
         responseBytes.close();
     }
 

@@ -1,6 +1,7 @@
 package com.godpalace.teacher3;
 
 import lombok.Getter;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -9,6 +10,8 @@ import java.nio.channels.SocketChannel;
 
 @Slf4j
 public class Student {
+    @Setter
+    @Getter
     private static int idCounter = 0;
 
     @Getter

@@ -2,6 +2,7 @@ package com.godpalace.teacher3.module;
 
 import com.godpalace.teacher3.Student;
 import com.godpalace.teacher3.StudentManager;
+import com.godpalace.teacher3.listener.StudentListener;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -15,6 +16,7 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.file.StandardOpenOption;
+import java.util.HashMap;
 import java.util.Random;
 import java.util.zip.GZIPInputStream;
 
@@ -40,7 +42,21 @@ public class FileManagerModule implements Module {
     private static final short ERROR_RENAME_FILE    = ERROR_DELETE_FILE + 1;
 
     @Getter
-    private static String curDir = File.separator;
+    private static final HashMap<Student, String> curDirs = new HashMap<>();
+
+    static {
+        StudentManager.addListener(new StudentListener() {
+            @Override
+            public void onStudentAdded(Student student) {
+                curDirs.put(student, File.separator);
+            }
+
+            @Override
+            public void onStudentRemoved(Student student) {
+                curDirs.remove(student);
+            }
+        });
+    }
 
     @Override
     public short getID() {
@@ -74,7 +90,7 @@ public class FileManagerModule implements Module {
 
     private static void printHelp() {
         System.out.println("""
-                    文件管理模块命令格式: student [option]
+                    文件管理模块命令格式: file [option]
                     
                     option:
                       help - 显示此帮助信息
@@ -120,6 +136,7 @@ public class FileManagerModule implements Module {
                 // 切换当前目录
                 Student student = StudentManager.getFirstSelectedStudent();
                 if (student == null) return;
+                String curDir = curDirs.get(student);
 
                 String arg = args[1].trim();
                 if (arg.startsWith(File.separator)) arg = arg.substring(1);
@@ -127,7 +144,7 @@ public class FileManagerModule implements Module {
                 if (arg.equals("..")) {
                     try {
                         if (curDir.length() == 3) {
-                            curDir = File.separator;
+                            curDirs.put(student, File.separator);
                             System.out.println("切换成功");
                             return;
                         }
@@ -174,7 +191,7 @@ public class FileManagerModule implements Module {
 
                             if (is == 0) {
                                 // 不是文件
-                                curDir = path;
+                                curDirs.put(student, path);
                                 System.out.println("切换成功");
                             } else {
                                 // 是文件
@@ -198,6 +215,7 @@ public class FileManagerModule implements Module {
                 }
 
                 // 显示当前目录路径
+                String curDir = curDirs.get(StudentManager.getFirstSelectedStudent());
                 System.out.println("当前目录路径: " + curDir);
             }
 
@@ -210,6 +228,7 @@ public class FileManagerModule implements Module {
                 // 列出当前目录文件
                 Student student = StudentManager.getFirstSelectedStudent();
                 if (student == null) return;
+                String curDir = curDirs.get(student);
 
                 byte[] bytes = curDir.getBytes();
 
@@ -271,6 +290,7 @@ public class FileManagerModule implements Module {
                 // 创建新文件
                 Student student = StudentManager.getFirstSelectedStudent();
                 if (student == null) return;
+                String curDir = curDirs.get(student);
 
                 String arg = args[1].trim();
                 if (arg.startsWith(File.separator)) arg = arg.substring(1);
@@ -314,6 +334,7 @@ public class FileManagerModule implements Module {
                 // 创建新目录
                 Student student = StudentManager.getFirstSelectedStudent();
                 if (student == null) return;
+                String curDir = curDirs.get(student);
 
                 String arg = args[1].trim();
                 if (arg.startsWith(File.separator)) arg = arg.substring(1);
@@ -357,6 +378,7 @@ public class FileManagerModule implements Module {
                 // 删除文件
                 Student student = StudentManager.getFirstSelectedStudent();
                 if (student == null) return;
+                String curDir = curDirs.get(student);
 
                 String arg = args[1].trim();
                 if (arg.startsWith(File.separator)) arg = arg.substring(1);
@@ -400,6 +422,7 @@ public class FileManagerModule implements Module {
                 // 重命名文件
                 Student student = StudentManager.getFirstSelectedStudent();
                 if (student == null) return;
+                String curDir = curDirs.get(student);
 
                 String old = args[1].trim();
                 if (old.startsWith(File.separator)) old = old.substring(1);
@@ -450,6 +473,7 @@ public class FileManagerModule implements Module {
 
                 Student student = StudentManager.getFirstSelectedStudent();
                 if (student == null) return;
+                String curDir = curDirs.get(student);
                 InetSocketAddress sip = (InetSocketAddress) student.getChannel().getLocalAddress();
 
                 // 获取本地文件
@@ -471,6 +495,7 @@ public class FileManagerModule implements Module {
                 int port = portRandom.nextInt(1000) + 37000;
                 while (true) {
                     try (ServerSocketChannel channel = ServerSocketChannel.open()) {
+                        channel.socket().setSoTimeout(5000);
                         channel.bind(new InetSocketAddress(sip.getAddress(), port));
 
                         // 发送请求
@@ -525,6 +550,7 @@ public class FileManagerModule implements Module {
                 // 下载文件到本地
                 Student student = StudentManager.getFirstSelectedStudent();
                 if (student == null) return;
+                String curDir = curDirs.get(student);
                 InetSocketAddress sip = (InetSocketAddress) student.getChannel().getLocalAddress();
 
                 String arg = args[1].trim();
@@ -541,6 +567,7 @@ public class FileManagerModule implements Module {
                 int port = portRandom.nextInt(1000) + 37000;
                 while (true) {
                     try (ServerSocketChannel channel = ServerSocketChannel.open()) {
+                        channel.socket().setSoTimeout(5000);
                         channel.bind(new InetSocketAddress(sip.getAddress(), port));
 
                         // 发送请求

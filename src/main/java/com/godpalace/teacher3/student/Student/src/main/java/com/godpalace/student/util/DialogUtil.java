@@ -1,8 +1,12 @@
 package com.godpalace.student.util;
 
+import com.godpalace.student.ThreadPoolManager;
+import lombok.extern.slf4j.Slf4j;
+
 import javax.swing.*;
 import java.awt.*;
 
+@Slf4j
 public final class DialogUtil {
     private DialogUtil() {
     }
@@ -31,26 +35,16 @@ public final class DialogUtil {
             label.setFont(font);
             frame.setContentPane(label);
 
-            new Thread(() -> {
+            ThreadPoolManager.getExecutor().execute(() -> {
                 try {
                     Thread.sleep(duration);
                     frame.dispose();
                 } catch (Exception e) {
-                    throw new RuntimeException(e);
-                } finally {
-                    try {
-                        synchronized (frame) {
-                            frame.notifyAll();
-                        }
-                    } catch (Exception ignored) {
-                    }
+                    log.error(e.getMessage(), e);
                 }
-            }).start();
+            });
 
             frame.setVisible(true);
-            synchronized (frame) {
-                frame.wait();
-            }
         } catch (Exception e) {
             throw new RuntimeException(e);
         }

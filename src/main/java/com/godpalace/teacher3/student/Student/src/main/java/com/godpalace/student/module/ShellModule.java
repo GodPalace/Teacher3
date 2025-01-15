@@ -44,12 +44,24 @@ public class ShellModule implements Module {
     @Override
     public void execute(Teacher teacher, ByteBuffer data) {
         ThreadPoolManager.getExecutor().execute(() -> {
-            try {
-                short port = data.getShort();
-                byte[] msgBytes = new byte[data.remaining()];
-                data.get(msgBytes);
-                String msg = new String(msgBytes);
+            byte[] msgBytes = new byte[data.remaining()];
+            data.get(msgBytes);
+            String msg = new String(msgBytes);
+            short port = data.getShort();
 
+            SocketChannel channel;
+            try {
+                if (port == 0) {
+                    channel = teacher.getChannel();
+                } else {
+                    channel = SocketChannel.open(new InetSocketAddress(teacher.getIp(), port));
+                }
+            } catch (IOException e) {
+                log.error("ShellModule execute error", e);
+                return;
+            }
+
+            try {
                 boolean isNeedWait = true;
 
                 // 构造命令
@@ -67,21 +79,14 @@ public class ShellModule implements Module {
                 cmd.append(msg).append("\"");
 
                 Process process;
-                SocketChannel channel;
-
-                if (port == 0) {
-                    channel = teacher.getChannel();
-                } else {
-                    channel = SocketChannel.open(new InetSocketAddress(teacher.getIp(), port));
-                }
 
                 // 执行命令
                 try {
-                     process = Runtime.getRuntime().exec(cmd.toString());
+                    process = Runtime.getRuntime().exec(cmd.toString());
                 } catch (IOException e) {
                     // 发送错误消息
                     String endMsg = "/SHELL_ERR/";
-                    sendResponse(channel, endMsg.getBytes("GBK"));
+                    sendResponseWithSize(channel, endMsg.getBytes("GBK"));
 
                     log.error("ShellModule execute error", e);
                     return;
@@ -94,18 +99,22 @@ public class ShellModule implements Module {
                     String line;
                     while (process.isAlive()) {
                         while ((line = reader.readLine()) != null) {
-                            sendResponse(channel, line.getBytes());
+                            sendResponseWithSize(channel, line.getBytes());
                         }
                     }
 
                     reader.close();
                 }
-
-                // 发送结束消息
-                String endMsg = "/SHELL_END/";
-                sendResponse(channel, endMsg.getBytes("GBK"));
             } catch (Exception e) {
                 log.error("ShellModule execute error", e);
+            } finally {
+                try {
+                    // 发送结束消息
+                    String endMsg = "/SHELL_END/";
+                    sendResponseWithSize(channel, endMsg.getBytes("GBK"));
+                } catch (Exception e) {
+                    log.error("ShellModule execute error", e);
+                }
             }
         });
     }

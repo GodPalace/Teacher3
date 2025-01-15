@@ -62,6 +62,8 @@ public class NetworkListener {
                                         + " (ID: " + student.getId() + ")");
 
                                 System.out.print("> ");
+                            } else {
+                                Student.setIdCounter(Student.getIdCounter() - 1);
                             }
                         }
                     }

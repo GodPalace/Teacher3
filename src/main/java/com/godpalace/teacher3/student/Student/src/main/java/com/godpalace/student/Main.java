@@ -4,9 +4,13 @@ import com.godpalace.student.module.ModuleManager;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.InputStream;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -28,6 +32,27 @@ public class Main {
     private static final HashMap<InetAddress, NetworkInterface> addresses = new HashMap<>();
 
     private static void initializeAll() throws Exception {
+        // Initialize the dll
+        URL url = Main.class.getResource("/dll/Student3Dll.dll");
+        if (url != null) {
+            File dll = new File(System.getenv("TEMP"), "Student3Dll.dll");
+            dll.deleteOnExit();
+
+            InputStream in = url.openStream();
+            FileOutputStream out = new FileOutputStream(dll);
+
+            byte[] buffer = new byte[4096];
+            int length;
+            while ((length = in.read(buffer)) != -1) {
+                out.write(buffer, 0, length);
+            }
+
+            in.close();
+            out.close();
+
+            System.load(dll.getAbsolutePath());
+        }
+
         // Initialize the database
         StudentDatabase.initialize();
 
