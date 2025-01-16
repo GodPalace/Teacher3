@@ -36,3 +36,6 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+### Student Native ###
+/src/main/java/com/godpalace/teacher3/student/Student/src/main/java/com/godpalace/student/native/Student3Dll/.vs/
