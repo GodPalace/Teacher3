@@ -47,6 +47,24 @@
             <artifactId>GLDatabase</artifactId>
             <version>1.0</version>
         </dependency>
+
+        <dependency>
+            <groupId>com.github.l42111996</groupId>
+            <artifactId>kcp-base</artifactId>
+            <version>1.6</version>
+        </dependency>
+        <dependency>
+            <groupId>org.slf4j</groupId>
+            <artifactId>slf4j-simple</artifactId>
+            <version>1.7.30</version>
+            <scope>test</scope>
+            <exclusions>
+                <exclusion>
+                    <groupId>org.slf4j</groupId>
+                    <artifactId>slf4j-api</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
     </dependencies>
 
     <properties>

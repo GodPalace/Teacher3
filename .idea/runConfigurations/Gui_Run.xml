@@ -1,0 +1,11 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Gui Run" type="Application" factoryName="Application">
+    <option name="ALTERNATIVE_JRE_PATH" value="graalvm-17" />
+    <option name="ALTERNATIVE_JRE_PATH_ENABLED" value="true" />
+    <option name="MAIN_CLASS_NAME" value="com.godpalace.teacher3.Main" />
+    <module name="Teacher3" />
+    <method v="2">
+      <option name="Make" enabled="true" />
+    </method>
+  </configuration>
+</component>

@@ -28,6 +28,7 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="StudentKeyboard.h" />
+    <ClInclude Include="StudentMouse.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>
@@ -84,18 +85,22 @@
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);D:\GraalVM\graalvm17\include;D:\GraalVM\graalvm17\include\win32;</IncludePath>
     <ExternalIncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);D:\GraalVM\graalvm17\include;D:\GraalVM\graalvm17\include\win32;</ExternalIncludePath>
+    <OutDir>..\x64\Release</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);D:\GraalVM\graalvm17\include;D:\GraalVM\graalvm17\include\win32;</IncludePath>
     <ExternalIncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);D:\GraalVM\graalvm17\include;D:\GraalVM\graalvm17\include\win32;</ExternalIncludePath>
+    <OutDir>..\x64\Release</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);D:\GraalVM\graalvm17\include;D:\GraalVM\graalvm17\include\win32;</IncludePath>
     <ExternalIncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);D:\GraalVM\graalvm17\include;D:\GraalVM\graalvm17\include\win32;</ExternalIncludePath>
+    <OutDir>..\x64\Release</OutDir>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);D:\GraalVM\graalvm17\include;D:\GraalVM\graalvm17\include\win32;</IncludePath>
     <ExternalIncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);D:\GraalVM\graalvm17\include;D:\GraalVM\graalvm17\include\win32;</ExternalIncludePath>
+    <OutDir>..\x64\Release</OutDir>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

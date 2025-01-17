@@ -20,17 +20,17 @@ public class CommandProcessor {
         HashMap<Short, Module> modules = ModuleManager.getModules();
 
         ByteBuffer buffer = ByteBuffer.allocate(2);
-        if (teacher.getChannel().read(buffer) == -1) return;
+        if (teacher.getChannel().read(buffer) <= 0) return;
         buffer.flip();
         short cmd = buffer.getShort();
 
         buffer = ByteBuffer.allocate(4);
-        if (teacher.getChannel().read(buffer) == -1) return;
+        if (teacher.getChannel().read(buffer) <= 0) return;
         buffer.flip();
         int length = buffer.getInt();
 
         buffer = ByteBuffer.allocate(length);
-        if (teacher.getChannel().read(buffer) == -1) return;
+        if (teacher.getChannel().read(buffer) <= 0) return;
         buffer.flip();
 
         if (modules.containsKey(cmd)) {

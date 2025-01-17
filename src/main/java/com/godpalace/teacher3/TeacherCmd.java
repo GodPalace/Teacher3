@@ -25,8 +25,11 @@ public class TeacherCmd {
         helpString.append("\n");
 
         for (Module module : ModuleManager.getModules().values()) {
+            String command = module.getCommand().trim();
+            if (command.isEmpty()) continue;
+
             helpString.append("  ")
-                    .append(module.getCommand().trim())
+                    .append(command)
                     .append(" - ").append(module.getTooltip()).append("\n");
         }
     }

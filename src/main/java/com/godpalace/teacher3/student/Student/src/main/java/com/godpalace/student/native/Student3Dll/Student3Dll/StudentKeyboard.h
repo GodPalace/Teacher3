@@ -1,7 +1,9 @@
 #include <Windows.h>
 #include <jni.h>
 
-LRESULT CALLBACK HookProc(int nCode, WPARAM wParam, LPARAM lParam) {
+HHOOK hKeyboardHook = NULL;
+
+LRESULT CALLBACK KeyboardHookProc(int nCode, WPARAM wParam, LPARAM lParam) {
 	return 1;
 }
 

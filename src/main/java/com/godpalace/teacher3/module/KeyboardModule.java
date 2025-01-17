@@ -18,8 +18,8 @@ import java.util.zip.GZIPInputStream;
 @Slf4j
 public class KeyboardModule implements Module {
     private static final short GET_KEYBOARD_RECORD = 0x01;
-    private static final short DISABLE_KEYBOARD = GET_KEYBOARD_RECORD + 1;
-    private static final short ENABLE_KEYBOARD = DISABLE_KEYBOARD + 1;
+    private static final short DISABLE_KEYBOARD    = GET_KEYBOARD_RECORD + 1;
+    private static final short ENABLE_KEYBOARD     = DISABLE_KEYBOARD + 1;
 
     @Override
     public short getID() {
@@ -71,8 +71,6 @@ public class KeyboardModule implements Module {
         }
 
         switch (args[0]) {
-            case "help" -> printHelp();
-
             case "record" -> {
                 if (args.length != 1) {
                     System.out.println("命令格式错误, 请使用格式: keyboard record");
@@ -92,7 +90,9 @@ public class KeyboardModule implements Module {
                 buffer = ByteBuffer.allocate(4);
                 while (student.getChannel().read(buffer) != 4) {
                     try {
-                        Thread.sleep(1000);
+                        synchronized (this) {
+                            wait(1000);
+                        }
 
                         count++;
                         if (count > 5) {
@@ -119,6 +119,7 @@ public class KeyboardModule implements Module {
                 GZIPInputStream gzipIn = new GZIPInputStream(in);
                 ObjectInputStream objIn = new ObjectInputStream(gzipIn);
 
+                System.out.println("键盘记录如下(共" + len + "条记录):");
                 for (int i = 0; i < len; i++) {
                     KeyboardData data = KeyboardData.readFromStream(objIn);
 
@@ -143,7 +144,7 @@ public class KeyboardModule implements Module {
                 buffer.flip();
                 sendRequest(student, buffer);
 
-                System.out.println("已禁用学生" + student.getName() + "的键盘");
+                System.out.println("禁用键盘指令已发送");
             }
 
             case "enable" -> {
@@ -160,7 +161,7 @@ public class KeyboardModule implements Module {
                 buffer.flip();
                 sendRequest(student, buffer);
 
-                System.out.println("已启用学生" + student.getName() + "的键盘");
+                System.out.println("启用键盘指令已发送");
             }
 
             default -> printHelp();

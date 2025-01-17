@@ -26,7 +26,7 @@ public interface Module {
     }
 
     default void sendResponse(SocketChannel channel, ByteBuffer data) throws IOException {
-        sendResponse(channel, data.array());
+        channel.write(data);
     }
 
     default void sendResponse(SocketChannel channel, byte[] bytes) throws IOException {

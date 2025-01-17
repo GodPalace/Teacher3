@@ -92,7 +92,9 @@ public class ReverseConnectModule implements Module {
                         log.debug("Failed to connect to teacher");
 
                         try {
-                            Thread.sleep(30000);
+                            synchronized (this) {
+                                wait(30000);
+                            }
                         } catch (InterruptedException e1) {
                             log.error("Failed to sleep");
                         }

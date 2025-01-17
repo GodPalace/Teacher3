@@ -74,7 +74,9 @@ public class ShellModule implements Module {
             ByteBuffer buffer = ByteBuffer.allocate(4);
             while (student.getChannel().read(buffer) != 4) {
                 try {
-                    Thread.sleep(1000);
+                    synchronized (this) {
+                        wait(1000);
+                    }
 
                     count++;
                     if (count > 10) {

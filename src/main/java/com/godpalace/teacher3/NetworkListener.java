@@ -12,6 +12,7 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 @Getter
 @Slf4j
@@ -55,16 +56,25 @@ public class NetworkListener {
                             }
 
                             Student student = new Student(accept);
-                            if (!StudentManager.getStudents().contains(student)) {
-                                StudentManager.addStudent(student);
+                            CopyOnWriteArrayList<Student> students = StudentManager.getStudents();
 
-                                System.out.println("\n新的学生连接: " + student.getName()
-                                        + " (ID: " + student.getId() + ")");
+                            int index = students.indexOf(student);
+                            if (index >= 0) {
+                                Student s = students.get(index);
 
-                                System.out.print("> ");
-                            } else {
-                                Student.setIdCounter(Student.getIdCounter() - 1);
+                                if (s.isAlive()) {
+                                    Student.setIdCounter(Student.getIdCounter() - 1);
+                                    continue;
+                                } else {
+                                    StudentManager.removeStudent(s);
+                                    s.close();
+                                }
                             }
+
+                            StudentManager.addStudent(student);
+                            System.out.println("\n新的学生连接: " + student.getName()
+                                    + " (ID: " + student.getId() + ")");
+                            System.out.print("> ");
                         }
                     }
                 } catch (Exception e) {

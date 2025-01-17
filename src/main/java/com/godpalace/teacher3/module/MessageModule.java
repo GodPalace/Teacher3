@@ -43,22 +43,26 @@ public class MessageModule implements Module {
             return;
         }
 
-        byte[] bytes = args[0].trim().getBytes();
-        ByteBuffer data = ByteBuffer.allocate(bytes.length);
-        data.put(bytes);
-        data.flip();
+        try {
+            byte[] bytes = args[0].trim().getBytes("GBK");
+            ByteBuffer data = ByteBuffer.allocate(bytes.length);
+            data.put(bytes);
+            data.flip();
 
-        int count = 0;
-        for (Student student : StudentManager.getSelectedStudents()) {
-            try {
-                sendRequest(student, data);
-                count++;
-            } catch (IOException ex) {
-                log.error("发送消息到学生[{}]失败", student.getName(), ex);
+            int count = 0;
+            for (Student student : StudentManager.getSelectedStudents()) {
+                try {
+                    sendRequest(student, data);
+                    count++;
+                } catch (IOException ex) {
+                    System.out.println("发送消息到学生[" + student.getName() + "]失败: " + ex.getMessage());
+                }
             }
-        }
 
-        System.out.println("消息发送成功! 共有" + count + "个学生发送成功.");
+            System.out.println("消息发送成功! 共有" + count + "个学生发送成功.");
+        } catch (Exception ex) {
+            System.out.println("消息发送失败: " + ex.getMessage());
+        }
     }
 
     @Override
