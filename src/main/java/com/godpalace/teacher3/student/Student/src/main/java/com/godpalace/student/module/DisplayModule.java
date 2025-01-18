@@ -12,10 +12,8 @@ import kcp.KcpListener;
 import kcp.Ukcp;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.imageio.ImageIO;
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.io.ByteArrayOutputStream;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.Random;
@@ -105,8 +103,6 @@ public class DisplayModule implements Module {
     static class DisplayHandler implements KcpListener {
         @Override
         public void onConnected(Ukcp ukcp) {
-            log.debug("DisplayHandler onConnected");
-
             ThreadPoolManager.getExecutor().execute(() -> {
                 while (true) {
                     try {

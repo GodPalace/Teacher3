@@ -44,10 +44,10 @@ public class ShellModule implements Module {
     @Override
     public void execute(Teacher teacher, ByteBuffer data) {
         ThreadPoolManager.getExecutor().execute(() -> {
+            short port = data.getShort();
             byte[] msgBytes = new byte[data.remaining()];
             data.get(msgBytes);
             String msg = new String(msgBytes);
-            short port = data.getShort();
 
             SocketChannel channel;
             try {

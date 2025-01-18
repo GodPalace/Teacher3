@@ -2,7 +2,6 @@ package com.godpalace.teacher3.module;
 
 import com.godpalace.teacher3.Student;
 import com.godpalace.teacher3.StudentManager;
-import com.godpalace.teacher3.ThreadPoolManager;
 import lombok.extern.slf4j.Slf4j;
 
 import javax.imageio.ImageIO;
@@ -73,33 +72,42 @@ public class DisplayModule implements Module {
             buffer.flip();
 
             for (final Student student : StudentManager.getSelectedStudents()) {
-                ThreadPoolManager.getExecutor().execute(() -> {
-                    File file = new File(System.currentTimeMillis() + "-capture.png");
+                File file = new File(System.currentTimeMillis() + "-capture.png");
 
-                    try (FileOutputStream fileOut = new FileOutputStream(file)) {
-                        sendRequest(student, buffer);
+                try (FileOutputStream fileOut = new FileOutputStream(file)) {
+                    sendRequest(student, buffer);
+                    Thread.sleep(1000);
 
-                        ByteBuffer response = ByteBuffer.allocate(4);
-                        while (student.getChannel().read(response) != 4) Thread.yield();
-                        response.flip();
-                        int size = response.getInt();
+                    int count = 0;
+                    ByteBuffer response = ByteBuffer.allocate(RESPONSE_HEAD_SIZE);
+                    while (student.getChannel().read(response) != RESPONSE_HEAD_SIZE) {
+                        synchronized (this) {
+                            wait(1000);
+                        }
 
-                        ByteBuffer data = ByteBuffer.allocate(size);
-                        while (student.getChannel().read(data) != size) Thread.yield();
-                        data.flip();
-
-                        // 保存到本地
-                        BufferedImage image = ImageIO.read(new ByteArrayInputStream(data.array()));
-                        ImageIO.write(image, "PNG", fileOut);
-                        fileOut.flush();
-
-                        System.out.println("屏幕截图已保存到本地: " + file.getAbsolutePath());
-                    } catch (IOException e) {
-                        log.error("屏幕监视模块发送请求失败", e);
-                    } finally {
-                        System.out.print("> ");
+                        if (count++ > 5) {
+                            System.err.println("屏幕监视模块获取屏幕截图超时");
+                            break;
+                        }
                     }
-                });
+                    response.flip();
+                    int size = response.getInt();
+
+                    response = ByteBuffer.allocate(size);
+                    student.getChannel().read(response);
+                    response.flip();
+
+                    // 保存到本地
+                    BufferedImage image = ImageIO.read(new ByteArrayInputStream(response.array()));
+                    if (image == null) throw new IOException("无法解析屏幕截图");
+                    ImageIO.write(image, "PNG", fileOut);
+                    fileOut.flush();
+
+                    System.out.println("屏幕截图已保存到本地: " + file.getAbsolutePath());
+                } catch (IOException | InterruptedException e) {
+                    System.out.println("\n屏幕监视模块发送请求失败: " + e.getMessage());
+                    System.out.print("> ");
+                }
             }
         } else {
             printHelp();
