@@ -5,6 +5,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.net.Inet4Address;
@@ -33,25 +34,58 @@ public class Main {
 
     private static void initializeAll() throws Exception {
         // Initialize the dll
-        URL url = Main.class.getResource("/dll/Student3Dll.dll");
+        File dll = new File(System.getenv("TEMP"), "StudentHookDll.dll");
+        URL url = Main.class.getResource("/dll/StudentHookDll.dll");
         if (url != null) {
-            File dll = new File(System.getenv("TEMP"), "Student3Dll.dll");
-            dll.deleteOnExit();
+            try {
+                dll.deleteOnExit();
 
-            InputStream in = url.openStream();
-            FileOutputStream out = new FileOutputStream(dll);
+                InputStream in = url.openStream();
+                FileOutputStream out = new FileOutputStream(dll);
 
-            byte[] buffer = new byte[4096];
-            int length;
-            while ((length = in.read(buffer)) != -1) {
-                out.write(buffer, 0, length);
+                byte[] buffer = new byte[4096];
+                int length;
+                while ((length = in.read(buffer)) != -1) {
+                    out.write(buffer, 0, length);
+                }
+
+                in.close();
+                out.close();
+
+                log.debug("Released the StudentHookDll file");
+            } catch (FileNotFoundException ignored) {
+            } catch (Exception e) {
+                log.error("Could not download the StudentHookDll file {}", e.getMessage());
             }
-
-            in.close();
-            out.close();
-
-            System.load(dll.getAbsolutePath());
+        } else {
+            log.error("Could not find the StudentHookDll file");
         }
+
+        dll = new File(System.getenv("TEMP"), "Student3Dll.dll");
+        url = Main.class.getResource("/dll/Student3Dll.dll");
+        if (url != null) {
+            try {
+                InputStream in = url.openStream();
+                FileOutputStream out = new FileOutputStream(dll);
+
+                byte[] buffer = new byte[4096];
+                int length;
+                while ((length = in.read(buffer)) != -1) {
+                    out.write(buffer, 0, length);
+                }
+
+                in.close();
+                out.close();
+
+                log.debug("Released the Student3Dll file");
+            } catch (FileNotFoundException ignored) {
+            } catch (Exception e) {
+                log.error("Could not download the Student3Dll file {}", e.getMessage());
+            }
+        } else {
+            log.error("Could not find the Student3Dll file");
+        }
+        System.load(dll.getAbsolutePath());
 
         // Initialize the database
         StudentDatabase.initialize();
@@ -88,8 +122,7 @@ public class Main {
             initializeAll();
             log.info("Starting the program...");
         } catch (Exception e) {
-            log.error("Error while initializing the program", e);
-            System.exit(1);
+            log.error("Error while initializing the program {}", e.getMessage());
         }
     }
 }

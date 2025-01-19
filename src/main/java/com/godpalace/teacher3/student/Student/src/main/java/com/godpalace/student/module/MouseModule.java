@@ -22,6 +22,8 @@ public class MouseModule implements Module {
         } catch (AWTException e) {
             log.error("MouseModule init failed", e);
         }
+
+        Runtime.getRuntime().addShutdownHook(new Thread(MouseModule::EnableMouse));
     }
 
     private static native void DisableMouse();

@@ -11,7 +11,7 @@ public class ThreadPoolManager {
     private static final ThreadPoolExecutor executor;
 
     static {
-        executor = new ThreadPoolExecutor(8, 20,
+        executor = new ThreadPoolExecutor(10, 25,
                 10, TimeUnit.SECONDS,
                 new LinkedBlockingQueue<>());
     }

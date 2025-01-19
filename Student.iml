@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<module version="4">
+  <component name="AdditionalModuleElements">
+    <content url="file://$MODULE_DIR$/src/main/java/com/godpalace/teacher3/student/Student" dumb="true">
+      <excludeFolder url="file://$MODULE_DIR$/src/main/java/com/godpalace/teacher3/student/Student/src/main/java/com/godpalace/student/native" />
+      <excludeFolder url="file://$MODULE_DIR$/src/main/java/com/godpalace/teacher3/student/Student/src/main/java/com/godpalace/student/native/Student3Dll" />
+    </content>
+  </component>
+</module>

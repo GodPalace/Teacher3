@@ -29,6 +29,7 @@
   <ItemGroup>
     <ClInclude Include="StudentKeyboard.h" />
     <ClInclude Include="StudentMouse.h" />
+    <ClInclude Include="StudentProtect.h" />
   </ItemGroup>
   <PropertyGroup Label="Globals">
     <VCProjectVersion>17.0</VCProjectVersion>

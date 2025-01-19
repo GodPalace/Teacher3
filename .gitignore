@@ -9,7 +9,6 @@ target/
 .idea/compiler.xml
 .idea/libraries/
 *.iws
-*.iml
 *.ipr
 
 ### Eclipse ###
@@ -39,3 +38,4 @@ build/
 
 ### Student Native ###
 /src/main/java/com/godpalace/teacher3/student/Student/src/main/java/com/godpalace/student/native/Student3Dll/.vs/
+/src/main/java/com/godpalace/teacher3/student/Student/src/main/java/com/godpalace/student/native/StudentHookDll/.vs/

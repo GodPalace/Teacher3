@@ -105,7 +105,7 @@ public class NetworkCore {
                         }
 
                         try {
-                            CommandProcessor.handle(teacher);
+                            CommandHandler.handle(teacher);
                         } catch (Exception e) {
                             log.error("Error while handling command", e);
                             selector.selectedKeys().remove(key);

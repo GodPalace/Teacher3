@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configuration status="debug" monitorInterval="30">
+<configuration status="error" monitorInterval="30">
     <!-- 先定义所有的appender(附加器)-->
     <appenders>
         <!-- 输出控制台的配置 -->
@@ -20,14 +20,13 @@
     <!-- 然后定义logger，只有定义了logger并引入的appender，appender才会生效 -->
     <loggers>
         <!-- 过滤掉spring和mybatis的一些无用的DEBUG信息-->
-        <logger name="org.springframework" level="INFO"/>
-        <logger name="org.mybatis" level="INFO"/>
+        <logger name="io.netty" level="error"/>
+        <logger name="com.backblaze" level="error"/>
 
         <!-- 建立一个默认的root的logger -->
         <root level="trace">
             <appender-ref ref="Console"/>
             <appender-ref ref="ERROR"/>
-            <appender-ref ref="log"/>
         </root>
     </loggers>
 

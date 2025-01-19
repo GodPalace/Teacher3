@@ -1,12 +1,37 @@
+#pragma warning(disable:4996)
+
+#include <iostream>
 #include "StudentKeyboard.h"
 #include "StudentMouse.h"
+#include "StudentProtect.h"
 using namespace std;
 
-HINSTANCE hInstance;
+typedef void(*HookFunc)(DWORD no_pid);
+HMODULE hHookModule = NULL;
+HookFunc Hook = NULL;
 
+HINSTANCE hInstance = NULL;
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD code, LPVOID lpvReserved) {
 	if (code == DLL_PROCESS_ATTACH) {
 		hInstance = hinstDLL;
+
+		// Load dll
+		string temp = getenv("TEMP");
+		temp.append("\\").append("StudentHookDll.dll");
+
+		hHookModule = LoadLibraryA(temp.c_str());
+		if (hHookModule != NULL) {
+			Hook = (HookFunc) GetProcAddress(hHookModule, "Hook");
+		}
+	}
+	else if (code == DLL_PROCESS_DETACH) {
+		// Unload dll
+		if (hHookModule != NULL) {
+			FreeLibrary(hHookModule);
+
+			Hook = NULL;
+			hHookModule = NULL;
+		}
 	}
 
 	return TRUE;
@@ -37,5 +62,16 @@ JNIEXPORT void JNICALL Java_com_godpalace_student_module_MouseModule_EnableMouse
 	if (hMouseHook != NULL) {
 		UnhookWindowsHookEx(hMouseHook);
 		hMouseHook = NULL;
+	}
+}
+
+// ProtectModule
+JNIEXPORT jboolean JNICALL Java_com_godpalace_student_module_ProtectModule_Protect(JNIEnv* env, jobject obj, jint pid) {
+	if (Hook != NULL) {
+		Hook(static_cast<DWORD>(pid));
+		return true;
+	}
+	else {
+		return false;
 	}
 }

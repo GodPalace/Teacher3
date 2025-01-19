@@ -1,0 +1,66 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "D:\\Object\\Teacher3\\src\\main\\java\\com\\godpalace\\teacher3\\student\\Student\\src\\main\\java\\com\\godpalace\\student\\native\\StudentHookDll\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{5CDDAA2D-D941-4A93-9347-FC662B8575DF}|StudentHookDll\\StudentHookDll.vcxproj|D:\\Object\\Teacher3\\src\\main\\java\\com\\godpalace\\teacher3\\student\\Student\\src\\main\\java\\com\\godpalace\\student\\native\\StudentHookDll\\StudentHookDll\\StudentHookDll.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{5CDDAA2D-D941-4A93-9347-FC662B8575DF}|StudentHookDll\\StudentHookDll.vcxproj|solutionrelative:StudentHookDll\\StudentHookDll.cpp||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{5CDDAA2D-D941-4A93-9347-FC662B8575DF}|StudentHookDll\\StudentHookDll.vcxproj|D:\\Object\\Teacher3\\src\\main\\java\\com\\godpalace\\teacher3\\student\\Student\\src\\main\\java\\com\\godpalace\\student\\native\\StudentHookDll\\StudentHookDll\\StudentHookDll.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}",
+      "RelativeMoniker": "D:0:0:{5CDDAA2D-D941-4A93-9347-FC662B8575DF}|StudentHookDll\\StudentHookDll.vcxproj|solutionrelative:StudentHookDll\\StudentHookDll.h||{D0E1A5C6-B359-4E41-9B60-3365922C2A22}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 200,
+          "SelectedChildIndex": 4,
+          "Children": [
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{3ae79031-e1bc-11d0-8f78-00a0c9110057}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{aa2115a1-9712-457b-9047-dbb71ca2cdd2}"
+            },
+            {
+              "$type": "Bookmark",
+              "Name": "ST:0:0:{1c4feeaa-4718-4aa9-859d-94ce25d182ba}"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "StudentHookDll.h",
+              "DocumentMoniker": "D:\\Object\\Teacher3\\src\\main\\java\\com\\godpalace\\teacher3\\student\\Student\\src\\main\\java\\com\\godpalace\\student\\native\\StudentHookDll\\StudentHookDll\\StudentHookDll.h",
+              "RelativeDocumentMoniker": "StudentHookDll\\StudentHookDll.h",
+              "ToolTip": "D:\\Object\\Teacher3\\src\\main\\java\\com\\godpalace\\teacher3\\student\\Student\\src\\main\\java\\com\\godpalace\\student\\native\\StudentHookDll\\StudentHookDll\\StudentHookDll.h",
+              "RelativeToolTip": "StudentHookDll\\StudentHookDll.h",
+              "ViewState": "AgIAAAEAAAAAAAAAAAAgwAYAAAAMAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000680|",
+              "WhenOpened": "2025-01-19T04:41:00.375Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "StudentHookDll.cpp",
+              "DocumentMoniker": "D:\\Object\\Teacher3\\src\\main\\java\\com\\godpalace\\teacher3\\student\\Student\\src\\main\\java\\com\\godpalace\\student\\native\\StudentHookDll\\StudentHookDll\\StudentHookDll.cpp",
+              "RelativeDocumentMoniker": "StudentHookDll\\StudentHookDll.cpp",
+              "ToolTip": "D:\\Object\\Teacher3\\src\\main\\java\\com\\godpalace\\teacher3\\student\\Student\\src\\main\\java\\com\\godpalace\\student\\native\\StudentHookDll\\StudentHookDll\\StudentHookDll.cpp",
+              "RelativeToolTip": "StudentHookDll\\StudentHookDll.cpp",
+              "ViewState": "AgIAACEAAAAAAAAAAAAAAC8AAAApAAAAAAAAAA==",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000677|",
+              "WhenOpened": "2025-01-19T05:16:53.825Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
