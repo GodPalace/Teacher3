@@ -23,8 +23,12 @@ public class ModuleManager {
 
                 Class<?> clazz = loader.loadClass(classPath);
                 if (!Module.class.isAssignableFrom(clazz)) continue;
-                Module module = (Module) clazz.getDeclaredConstructor().newInstance();
+                if (clazz.isAnnotationPresent(Disable.class)) {
+                    log.debug("Disabled module: {}", className);
+                    continue;
+                }
 
+                Module module = (Module) clazz.getDeclaredConstructor().newInstance();
                 if (!module.isLocalModule()) {
                     short id = module.getID();
 

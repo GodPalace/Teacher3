@@ -1,0 +1,8 @@
+﻿  Main.cpp
+    正在创建库 D:\Object\Teacher3\src\main\java\com\godpalace\teacher3\student\Student\src\main\java\com\godpalace\student\native\Student3Dll\Release\Student3Dll.lib 和对象 D:\Object\Teacher3\src\main\java\com\godpalace\teacher3\student\Student\src\main\java\com\godpalace\student\native\Student3Dll\Release\Student3Dll.exp
+Main.obj : error LNK2001: 无法解析的外部符号 _DetourTransactionCommit@0
+Main.obj : error LNK2001: 无法解析的外部符号 _DetourUpdateThread@4
+Main.obj : error LNK2001: 无法解析的外部符号 _DetourDetach@8
+Main.obj : error LNK2001: 无法解析的外部符号 _DetourTransactionBegin@0
+Main.obj : error LNK2001: 无法解析的外部符号 _DetourAttach@8
+D:\Object\Teacher3\src\main\java\com\godpalace\teacher3\student\Student\src\main\java\com\godpalace\student\native\Student3Dll\Release\Student3Dll.dll : fatal error LNK1120: 5 个无法解析的外部命令

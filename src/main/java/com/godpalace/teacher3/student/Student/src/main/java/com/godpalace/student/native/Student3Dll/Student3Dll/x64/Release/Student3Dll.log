@@ -1,9 +1,13 @@
-﻿D:\Program Files\Microsoft Visual Studio\2022\Community\MSBuild\Microsoft\VC\v170\Microsoft.CppBuild.targets(517,5): warning MSB8004: Output 目录未以斜杠结尾。  此生成实例将添加斜杠，因为必须有这个斜杠才能正确计算 Output 目录。
-  Main.cpp
-    正在创建库 ..\x64\Release\Student3Dll.lib 和对象 ..\x64\Release\Student3Dll.exp
+﻿  Main.cpp
+D:\Object\Teacher3\src\main\java\com\godpalace\teacher3\student\Student\src\main\java\com\godpalace\student\native\Student3Dll\Student3Dll\Main.cpp(90,20): warning C4311: “类型强制转换”: 从“void (__cdecl *)(void)”到“DWORD”的指针截断
+D:\Object\Teacher3\src\main\java\com\godpalace\teacher3\student\Student\src\main\java\com\godpalace\student\native\Student3Dll\Student3Dll\Main.cpp(90,20): warning C4302: “类型强制转换”: 从“void (__cdecl *)(void)”到“DWORD”截断
+D:\Object\Teacher3\src\main\java\com\godpalace\teacher3\student\Student\src\main\java\com\godpalace\student\native\Student3Dll\Student3Dll\Main.cpp(90,34): warning C4311: “类型强制转换”: 从“DWORD (__cdecl *)(PVOID)”到“DWORD”的指针截断
+D:\Object\Teacher3\src\main\java\com\godpalace\teacher3\student\Student\src\main\java\com\godpalace\student\native\Student3Dll\Student3Dll\Main.cpp(90,34): warning C4302: “类型强制转换”: 从“DWORD (__cdecl *)(PVOID)”到“DWORD”截断
+    正在创建库 D:\Object\Teacher3\src\main\java\com\godpalace\teacher3\student\Student\src\main\java\com\godpalace\student\native\Student3Dll\x64\Release\Student3Dll.lib 和对象 D:\Object\Teacher3\src\main\java\com\godpalace\teacher3\student\Student\src\main\java\com\godpalace\student\native\Student3Dll\x64\Release\Student3Dll.exp
   正在生成代码
-  3 of 79 functions ( 3.8%) were compiled, the rest were copied from previous compilation.
-    0 functions were new in current compilation
-    0 functions had inline decision re-evaluated but remain unchanged
+  Previous IPDB and IOBJ mismatch, fall back to full compilation.
+D:\Object\Teacher3\src\main\java\com\godpalace\teacher3\student\Student\src\main\java\com\godpalace\student\native\Student3Dll\Student3Dll\Main.cpp(72): warning C4715: “HookThreadProc”: 不是所有的控件路径都返回值
+D:\Object\Teacher3\src\main\java\com\godpalace\teacher3\student\Student\src\main\java\com\godpalace\student\native\Student3Dll\Student3Dll\Main.cpp(109): warning C4715: “Java_com_godpalace_student_module_ProtectModule_Protect”: 不是所有的控件路径都返回值
+  All 81 functions were compiled because no usable IPDB/IOBJ from previous compilation was found.
   已完成代码的生成
   Student3Dll.vcxproj -> D:\Object\Teacher3\src\main\java\com\godpalace\teacher3\student\Student\src\main\java\com\godpalace\student\native\Student3Dll\x64\Release\Student3Dll.dll

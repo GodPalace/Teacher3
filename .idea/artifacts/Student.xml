@@ -10,6 +10,9 @@
       <element id="extracted-dir" path="$MAVEN_REPOSITORY$/org/slf4j/slf4j-api/1.7.36/slf4j-api-1.7.36.jar" path-in-jar="/" />
       <element id="extracted-dir" path="$MAVEN_REPOSITORY$/org/apache/logging/log4j/log4j-api/2.17.2/log4j-api-2.17.2.jar" path-in-jar="/" />
       <element id="extracted-dir" path="$MAVEN_REPOSITORY$/com/godpalace/data/GLDatabase/1.0/GLDatabase-1.0.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/com/github/l42111996/kcp-base/1.6/kcp-base-1.6.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/com/github/l42111996/kcp-fec/1.6/kcp-fec-1.6.jar" path-in-jar="/" />
+      <element id="extracted-dir" path="$MAVEN_REPOSITORY$/io/netty/netty-all/4.1.54.Final/netty-all-4.1.54.Final.jar" path-in-jar="/" />
     </root>
   </artifact>
 </component>

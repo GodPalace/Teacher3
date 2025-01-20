@@ -33,39 +33,11 @@ public class Main {
     private static final HashMap<InetAddress, NetworkInterface> addresses = new HashMap<>();
 
     private static void initializeAll() throws Exception {
-        // Initialize the dll
-        File dll = new File(System.getenv("TEMP"), "StudentHookDll.dll");
-        URL url = Main.class.getResource("/dll/StudentHookDll.dll");
-        if (url != null) {
+        File dll = new File(System.getenv("TEMP"), "Student3Dll.dll");
+        URL dllUrl = Main.class.getResource("/dll/Student3Dll.dll");
+        if (dllUrl != null) {
             try {
-                dll.deleteOnExit();
-
-                InputStream in = url.openStream();
-                FileOutputStream out = new FileOutputStream(dll);
-
-                byte[] buffer = new byte[4096];
-                int length;
-                while ((length = in.read(buffer)) != -1) {
-                    out.write(buffer, 0, length);
-                }
-
-                in.close();
-                out.close();
-
-                log.debug("Released the StudentHookDll file");
-            } catch (FileNotFoundException ignored) {
-            } catch (Exception e) {
-                log.error("Could not download the StudentHookDll file {}", e.getMessage());
-            }
-        } else {
-            log.error("Could not find the StudentHookDll file");
-        }
-
-        dll = new File(System.getenv("TEMP"), "Student3Dll.dll");
-        url = Main.class.getResource("/dll/Student3Dll.dll");
-        if (url != null) {
-            try {
-                InputStream in = url.openStream();
+                InputStream in = dllUrl.openStream();
                 FileOutputStream out = new FileOutputStream(dll);
 
                 byte[] buffer = new byte[4096];

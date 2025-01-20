@@ -1,4 +1,5 @@
 #include <Windows.h>
+#include <TlHelp32.h>
 #include <jni.h>
 
 #ifndef _Included_com_godpalace_student_module_ProtectModule
