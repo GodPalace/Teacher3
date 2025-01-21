@@ -29,7 +29,7 @@ public class ProtectModule implements Module {
     }
 
     @Override
-    public void execute(Teacher teacher, ByteBuffer data) throws Exception {
+    public void execute(Teacher teacher, ByteBuffer data) {
     }
 
     @Override

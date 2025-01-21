@@ -16,7 +16,7 @@ import java.util.HashMap;
 
 @Slf4j
 public class CommandHandler {
-    public static void handle(Teacher teacher) throws Exception {
+    public static void handleCommand(Teacher teacher) throws Exception {
         HashMap<Short, Module> modules = ModuleManager.getModules();
 
         ByteBuffer buffer = ByteBuffer.allocate(2);

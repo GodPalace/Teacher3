@@ -4,10 +4,13 @@
 #include "StudentMouse.h"
 #include "StudentProtect.h"
 
-#include <iostream>
 #include <cstdio>
+#include <iostream>
 #include <string>
+#include <detours.h>
 using namespace std;
+
+#pragma comment(lib, "detours.lib")
 
 HMODULE hHookModule = NULL;
 
@@ -21,6 +24,30 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD code, LPVOID lpvReserved) {
 	}
 
 	return TRUE;
+}
+
+wchar_t* charToWchar(const char* c) {
+	size_t len = strlen(c) + 1;
+	wchar_t* wc = new wchar_t[len];
+	mbstowcs(wc, c, len);
+	return wc;
+}
+
+char* jstringToChar(JNIEnv* env, jstring jstr) {
+	char* rtn = NULL;
+	jclass clsstring = env->FindClass("java/lang/String");
+	jstring strencode = env->NewStringUTF("GB2312");
+	jmethodID mid = env->GetMethodID(clsstring, "getBytes", "(Ljava/lang/String;)[B");
+	jbyteArray barr = (jbyteArray)env->CallObjectMethod(jstr, mid, strencode);
+	jsize alen = env->GetArrayLength(barr);
+	jbyte* ba = env->GetByteArrayElements(barr, JNI_FALSE);
+	if (alen > 0) {
+		rtn = (char*)malloc(alen + 1);
+		memcpy(rtn, ba, alen);
+		rtn[alen] = 0;
+	}
+	env->ReleaseByteArrayElements(barr, ba, 0);
+	return rtn;
 }
 
 // KeyboardModule
@@ -52,58 +79,7 @@ JNIEXPORT void JNICALL Java_com_godpalace_student_module_MouseModule_EnableMouse
 }
 
 // ProtectModule
-typedef BOOL(WINAPI* HOOKFUNC)(DWORD protect_pid);
-struct ARGS {
-	LPCSTR dllPath;
-	LPCSTR funcName;
-	DWORD pid;
-	HMODULE hDllModule;
-	HOOKFUNC hookFunc;
-};
-
-DWORD WINAPI HookThreadProc(PVOID p) {
-	ARGS* args = (ARGS*) p;
-
-	args->hDllModule = LoadLibraryA(args->dllPath);
-	if (args->hDllModule == NULL) return 0;
-	args->hookFunc = (HOOKFUNC) GetProcAddress(args->hDllModule, args->funcName);
-	args->hookFunc(args->pid);
-	FreeLibrary(args->hDllModule);
-}
-void End() {}
-
 JNIEXPORT jboolean JNICALL Java_com_godpalace_student_module_ProtectModule_Protect(JNIEnv* env, jobject obj, jint pid) {
-	DWORD dPid = static_cast<DWORD>(pid);
-	
-	HANDLE hSnap = CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0);
-	PROCESSENTRY32 pe = { sizeof(PROCESSENTRY32) };
-
-	string dllPath = getenv("TEMP");
-	dllPath.append("\\").append("Student3HookDll.dll");
-	const char* cDllPath = dllPath.c_str();
-
-	for (BOOL status = Process32First(hSnap, &pe); status; status = Process32Next(hSnap, &pe)) {
-		if (pe.th32ProcessID == GetCurrentProcessId()) continue;
-		HANDLE hProcess = OpenProcess(PROCESS_ALL_ACCESS, FALSE, pe.th32ProcessID);
-
-		// Func
-		DWORD funcSize = (DWORD) End - (DWORD) HookThreadProc;
-		LPVOID funcPtr = VirtualAllocEx(hProcess, NULL, funcSize, MEM_COMMIT, PAGE_READWRITE);
-		if (funcPtr == NULL) continue;
-		if (!WriteProcessMemory(hProcess, funcPtr, HookThreadProc, funcSize, NULL)) continue;
-
-		// Args
-		DWORD argsSize = sizeof(ARGS);
-		ARGS args;
-		args.dllPath = cDllPath;
-		args.funcName = "Hook";
-		args.pid = pid;
-		LPVOID argsPtr = VirtualAllocEx(hProcess, NULL, argsSize, MEM_COMMIT, PAGE_READWRITE);
-		if (argsPtr == NULL) continue;
-		if (!WriteProcessMemory(hProcess, argsPtr, &args, argsSize, NULL)) continue;
-
-		// Execute
-		HANDLE hRemoteThread = CreateRemoteThread(hProcess, NULL, 0,
-			(LPTHREAD_START_ROUTINE) funcPtr, argsPtr, NULL, NULL);
-	}
+	return false;
 }
+

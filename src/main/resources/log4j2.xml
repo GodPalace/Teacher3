@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<configuration status="error" monitorInterval="30">
+<configuration status="error" monitorInterval="3600">
     <!-- 先定义所有的appender(附加器)-->
     <appenders>
         <!-- 输出控制台的配置 -->
@@ -9,12 +9,6 @@
             <!-- 输出日志的格式 -->
             <PatternLayout pattern="[%d{HH:mm:ss.SSS}] [%-5p] %l - %m%n"/>
         </Console>
-
-        <!-- 添加过滤器ThresholdFilter,可以有选择的输出某个级别以上的类别  onMatch="ACCEPT" onMismatch="DENY"意思是匹配就接受,否则直接拒绝  -->
-        <File name="ERROR" fileName="C:\Users\Public\.godpalace\teacher3\logs\error.log" append="false">
-            <ThresholdFilter level="error" onMatch="ACCEPT" onMismatch="DENY"/>
-            <PatternLayout pattern="[%d{yyyy.MM.dd 'at' HH:mm:ss z}] [%-5p] %l - %m%n"/>
-        </File>
     </appenders>
 
     <!-- 然后定义logger，只有定义了logger并引入的appender，appender才会生效 -->
@@ -26,7 +20,6 @@
         <!-- 建立一个默认的root的logger -->
         <root level="trace">
             <appender-ref ref="Console"/>
-            <appender-ref ref="ERROR"/>
         </root>
     </loggers>
 

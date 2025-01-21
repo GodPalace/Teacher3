@@ -84,20 +84,28 @@
   </ImportGroup>
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);D:\GraalVM\graalvm17\include;D:\GraalVM\graalvm17\include\win32;</IncludePath>
-    <ExternalIncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);D:\GraalVM\graalvm17\include;D:\GraalVM\graalvm17\include\win32;</ExternalIncludePath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);D:\GraalVM\graalvm17\include;D:\GraalVM\graalvm17\include\win32;D:\Detours\include</IncludePath>
+    <ExternalIncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);D:\GraalVM\graalvm17\include;D:\GraalVM\graalvm17\include\win32;D:\Detours\include</ExternalIncludePath>
+    <ReferencePath>D:\Detours\lib.X64;$(ReferencePath)</ReferencePath>
+    <LibraryPath>D:\Detours\lib.X64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);D:\GraalVM\graalvm17\include;D:\GraalVM\graalvm17\include\win32;</IncludePath>
-    <ExternalIncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);D:\GraalVM\graalvm17\include;D:\GraalVM\graalvm17\include\win32;</ExternalIncludePath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);D:\GraalVM\graalvm17\include;D:\GraalVM\graalvm17\include\win32;D:\Detours\include</IncludePath>
+    <ExternalIncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);D:\GraalVM\graalvm17\include;D:\GraalVM\graalvm17\include\win32;D:\Detours\include</ExternalIncludePath>
+    <ReferencePath>D:\Detours\lib.X64;$(ReferencePath)</ReferencePath>
+    <LibraryPath>D:\Detours\lib.X64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);D:\GraalVM\graalvm17\include;D:\GraalVM\graalvm17\include\win32;</IncludePath>
-    <ExternalIncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);D:\GraalVM\graalvm17\include;D:\GraalVM\graalvm17\include\win32;</ExternalIncludePath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);D:\GraalVM\graalvm17\include;D:\GraalVM\graalvm17\include\win32;D:\Detours\include</IncludePath>
+    <ExternalIncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);D:\GraalVM\graalvm17\include;D:\GraalVM\graalvm17\include\win32;D:\Detours\include</ExternalIncludePath>
+    <ReferencePath>D:\Detours\lib.X64;$(ReferencePath)</ReferencePath>
+    <LibraryPath>D:\Detours\lib.X64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
-    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);D:\GraalVM\graalvm17\include;D:\GraalVM\graalvm17\include\win32;</IncludePath>
-    <ExternalIncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);D:\GraalVM\graalvm17\include;D:\GraalVM\graalvm17\include\win32;</ExternalIncludePath>
+    <IncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);D:\GraalVM\graalvm17\include;D:\GraalVM\graalvm17\include\win32;D:\Detours\include</IncludePath>
+    <ExternalIncludePath>$(VC_IncludePath);$(WindowsSDK_IncludePath);D:\GraalVM\graalvm17\include;D:\GraalVM\graalvm17\include\win32;D:\Detours\include</ExternalIncludePath>
+    <ReferencePath>D:\Detours\lib.X64;$(ReferencePath)</ReferencePath>
+    <LibraryPath>D:\Detours\lib.X64;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

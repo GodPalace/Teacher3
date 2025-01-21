@@ -40,7 +40,7 @@ public class MouseModule implements Module {
     }
 
     @Override
-    public void execute(Teacher teacher, ByteBuffer data) throws Exception {
+    public void execute(Teacher teacher, ByteBuffer data) {
         switch (data.getShort()) {
             case FLY -> {
                 if (robot != null) {

@@ -41,18 +41,7 @@ public class KeyboardModule implements Module {
             public void nativeKeyPressed(NativeKeyEvent nativeEvent) {
                 Date date = new Date();
                 int key = nativeEvent.getKeyCode();
-                boolean pressed = true;
-
-                keyboardData.add(new KeyboardData(date, key, pressed));
-            }
-
-            @Override
-            public void nativeKeyReleased(NativeKeyEvent nativeEvent) {
-                Date date = new Date();
-                int key = nativeEvent.getKeyCode();
-                boolean pressed = false;
-
-                keyboardData.add(new KeyboardData(date, key, pressed));
+                keyboardData.add(new KeyboardData(date, key));
             }
         });
 
@@ -142,11 +131,10 @@ public class KeyboardModule implements Module {
         return false;
     }
 
-    record KeyboardData(Date date, int key, boolean pressed) {
+    record KeyboardData(Date date, int key) {
         public void writeToStream(ObjectOutputStream out) throws IOException {
             out.writeObject(date);
             out.writeInt(key);
-            out.writeBoolean(pressed);
         }
     }
 }

@@ -1,6 +1,7 @@
 package com.godpalace.teacher3.module;
 
 import com.godpalace.teacher3.Main;
+import com.godpalace.teacher3.NetworkListener;
 import com.godpalace.teacher3.Student;
 import com.godpalace.teacher3.StudentManager;
 import lombok.extern.slf4j.Slf4j;
@@ -61,6 +62,7 @@ public class StudentManagerModule implements Module {
                       help - 显示此帮助信息
                     
                       build - 构建学生端程序
+                      build [listener_id] - 构建学生端程序(启用反向连接)
                       build [ip] [port] - 构建学生端程序(启用反向连接)
                     
                       scan - 扫描学生端
@@ -118,8 +120,20 @@ public class StudentManagerModule implements Module {
                     listenerIpLength = listenerIp.length();
                     listenerPort = (short) port;
                 } else if (args.length == 2) {
-                    System.out.println("命令格式错误, 请使用格式: student build [ip] [port]");
-                    return;
+                    int listenerId;
+
+                    try {
+                        listenerId = Integer.parseInt(args[1]);
+                    } catch (NumberFormatException e) {
+                        System.out.println("命令格式错误, 请使用格式: student build [listener_id]");
+                        return;
+                    }
+
+                    // 启用反向连接
+                    NetworkListener listener = NetworkListener.getListeners().get(listenerId);
+                    listenerIp = listener.getAddress().getAddress().getHostAddress();
+                    listenerIpLength = listenerIp.length();
+                    listenerPort = (short) listener.getAddress().getPort();
                 }
 
                 System.out.println("正在构建学生端程序...");
@@ -162,7 +176,7 @@ public class StudentManagerModule implements Module {
                 }
 
                 // 写入反向连接配置
-                if (args.length == 3) {
+                if (args.length == 2 || args.length == 3) {
                     try {
                         byte[] configData = new byte[listenerIpLength + 3];
 

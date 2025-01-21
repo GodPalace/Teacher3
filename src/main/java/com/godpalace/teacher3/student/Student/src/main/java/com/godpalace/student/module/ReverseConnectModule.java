@@ -32,7 +32,7 @@ public class ReverseConnectModule implements Module {
     }
 
     @Override
-    public void execute(Teacher teacher, ByteBuffer data) throws Exception {
+    public void execute(Teacher teacher, ByteBuffer data) {
         ThreadPoolManager.getExecutor().execute(() -> {
             try {
                 // 读取配置文件
@@ -93,7 +93,7 @@ public class ReverseConnectModule implements Module {
 
                         try {
                             synchronized (this) {
-                                wait(30000);
+                                wait(10000);
                             }
                         } catch (InterruptedException e1) {
                             log.error("Failed to sleep");

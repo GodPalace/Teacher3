@@ -60,7 +60,7 @@ public class DisplayModule implements Module {
     }
 
     @Override
-    public void cmd(String[] args) throws IOException {
+    public void cmd(String[] args) {
         if (args.length != 1) {
             printHelp();
             return;
