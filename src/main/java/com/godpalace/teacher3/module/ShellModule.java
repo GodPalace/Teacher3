@@ -92,7 +92,8 @@ public class ShellModule implements Module {
 
             buffer = ByteBuffer.allocate(dataLength);
             student.getChannel().read(buffer);
-            String result = new String(buffer.array(), "GBK");
+            buffer.flip();
+            String result = new String(buffer.array());
 
             if (result.equals("/SHELL_END/")) break;
             if (result.equals("/SHELL_ERR/")) {

@@ -86,7 +86,7 @@ public class ShellModule implements Module {
                 } catch (IOException e) {
                     // 发送错误消息
                     String endMsg = "/SHELL_ERR/";
-                    sendResponseWithSize(channel, endMsg.getBytes("GBK"));
+                    sendResponseWithSize(channel, endMsg.getBytes());
 
                     log.error("ShellModule execute error", e);
                     return;
@@ -94,7 +94,7 @@ public class ShellModule implements Module {
 
                 if (isNeedWait && process != null) {
                     BufferedReader reader = new BufferedReader(
-                            new InputStreamReader(process.getInputStream()));
+                            new InputStreamReader(process.getInputStream(), "GBK"));
 
                     String line;
                     while (process.isAlive()) {
@@ -111,7 +111,7 @@ public class ShellModule implements Module {
                 try {
                     // 发送结束消息
                     String endMsg = "/SHELL_END/";
-                    sendResponseWithSize(channel, endMsg.getBytes("GBK"));
+                    sendResponseWithSize(channel, endMsg.getBytes());
                 } catch (Exception e) {
                     log.error("ShellModule execute error", e);
                 }

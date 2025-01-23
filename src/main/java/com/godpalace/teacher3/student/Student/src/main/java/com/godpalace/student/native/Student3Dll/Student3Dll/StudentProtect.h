@@ -7,7 +7,8 @@
 extern "C" {
 #endif
 
-	JNIEXPORT jboolean JNICALL Java_com_godpalace_student_module_ProtectModule_Protect(JNIEnv* env, jobject obj, jint pid);
+	JNIEXPORT jint JNICALL Java_com_godpalace_student_module_ProtectModule_Protect(JNIEnv* env, jobject obj, jint pid);
+	JNIEXPORT jint JNICALL Java_com_godpalace_student_module_ProtectModule_Unprotect(JNIEnv* env, jobject obj);
 
 #ifdef __cplusplus
 }

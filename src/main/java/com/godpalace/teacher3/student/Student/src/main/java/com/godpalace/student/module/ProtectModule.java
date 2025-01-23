@@ -6,17 +6,10 @@ import lombok.extern.slf4j.Slf4j;
 import java.lang.management.ManagementFactory;
 import java.nio.ByteBuffer;
 
-@Disable
 @Slf4j
 public class ProtectModule implements Module {
-    protected static native boolean Protect(int pid);
-
-    public ProtectModule() {
-        String name = ManagementFactory.getRuntimeMXBean().getName();
-        int pid = Integer.parseInt(name.split("@")[0]);
-        log.debug("Protecting process with PID: {}", pid);
-        log.debug("Call native method Protect() {}", (Protect(pid)? "success" : "failed"));
-    }
+    protected static native int Protect(int pid);
+    protected static native int Unprotect();
 
     @Override
     public short getID() {
@@ -30,6 +23,12 @@ public class ProtectModule implements Module {
 
     @Override
     public void execute(Teacher teacher, ByteBuffer data) {
+        String name = ManagementFactory.getRuntimeMXBean().getName();
+        int pid = Integer.parseInt(name.split("@")[0]);
+        log.debug("Protecting process with PID: {}", pid);
+        log.debug("Call native method Protect() {}", Protect(pid));
+
+        Runtime.getRuntime().addShutdownHook(new Thread(ProtectModule::Unprotect));
     }
 
     @Override
