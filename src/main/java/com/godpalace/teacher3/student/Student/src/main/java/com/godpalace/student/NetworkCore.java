@@ -1,5 +1,6 @@
 package com.godpalace.student;
 
+import com.godpalace.student.manager.ThreadPoolManager;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 

@@ -3,7 +3,7 @@ package com.godpalace.student.module;
 import com.backblaze.erasure.FecAdapt;
 import com.godpalace.data.database.ImageSerialization;
 import com.godpalace.student.Teacher;
-import com.godpalace.student.ThreadPoolManager;
+import com.godpalace.student.manager.ThreadPoolManager;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import kcp.ChannelConfig;

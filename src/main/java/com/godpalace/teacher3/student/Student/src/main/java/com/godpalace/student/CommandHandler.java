@@ -1,7 +1,7 @@
 package com.godpalace.student;
 
+import com.godpalace.student.manager.ModuleManager;
 import com.godpalace.student.module.Module;
-import com.godpalace.student.module.ModuleManager;
 import lombok.extern.slf4j.Slf4j;
 
 import java.nio.ByteBuffer;

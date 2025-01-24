@@ -1,17 +1,13 @@
 package com.godpalace.student;
 
-import com.godpalace.student.module.ModuleManager;
+import com.godpalace.student.manager.DllManager;
+import com.godpalace.student.manager.ModuleManager;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.InputStream;
 import java.net.Inet4Address;
 import java.net.InetAddress;
 import java.net.NetworkInterface;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -33,84 +29,8 @@ public class Main {
     private static final HashMap<InetAddress, NetworkInterface> addresses = new HashMap<>();
 
     private static void initializeAll() throws Exception {
-        File usbDll = new File(System.getenv("TEMP"), "Student3UsbDll.dll");
-        URL usbDllUrl = Main.class.getResource("/dll/Student3UsbDll.dll");
-        if (usbDllUrl != null) {
-            try {
-                InputStream in = usbDllUrl.openStream();
-                FileOutputStream out = new FileOutputStream(usbDll);
-
-                byte[] buffer = new byte[10240];
-                int length;
-                while ((length = in.read(buffer)) != -1) {
-                    out.write(buffer, 0, length);
-                }
-
-                in.close();
-                out.close();
-
-                log.debug("Released the Student3UsbDll file");
-            } catch (FileNotFoundException ignored) {
-            } catch (Exception e) {
-                log.error("Could not download the Student3UsbDll file {}", e.getMessage());
-            }
-        } else {
-            log.error("Could not find the Student3UsbDll file");
-        }
-
-        File hookDll = new File(System.getenv("TEMP"), "Student3HookDll.dll");
-        URL hookDllUrl = Main.class.getResource("/dll/Student3HookDll.dll");
-        if (hookDllUrl != null) {
-            try {
-                InputStream in = hookDllUrl.openStream();
-                FileOutputStream out = new FileOutputStream(hookDll);
-
-                byte[] buffer = new byte[10240];
-                int length;
-                while ((length = in.read(buffer)) != -1) {
-                    out.write(buffer, 0, length);
-                }
-
-                in.close();
-                out.close();
-
-                log.debug("Released the Student3HookDll file");
-            } catch (FileNotFoundException ignored) {
-            } catch (Exception e) {
-                log.error("Could not download the Student3HookDll file {}", e.getMessage());
-            }
-        } else {
-            log.error("Could not find the Student3HookDll file");
-        }
-
-        File studentDll = new File(System.getenv("TEMP"), "Student3Dll.dll");
-        URL dllUrl = Main.class.getResource("/dll/Student3Dll.dll");
-        if (dllUrl != null) {
-            try {
-                InputStream in = dllUrl.openStream();
-                FileOutputStream out = new FileOutputStream(studentDll);
-
-                byte[] buffer = new byte[10240];
-                int length;
-                while ((length = in.read(buffer)) != -1) {
-                    out.write(buffer, 0, length);
-                }
-
-                in.close();
-                out.close();
-
-                log.debug("Released the Student3Dll file");
-            } catch (FileNotFoundException ignored) {
-            } catch (Exception e) {
-                log.error("Could not download the Student3Dll file {}", e.getMessage());
-            }
-        } else {
-            log.error("Could not find the Student3Dll file");
-        }
-        System.load(studentDll.getAbsolutePath());
-
-        // Initialize the database
-        StudentDatabase.initialize();
+        // Initialize the dll
+        DllManager.initialize();
 
         // Initialize the server
         Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
@@ -141,10 +61,14 @@ public class Main {
         // Initialize all
         try {
             log.info("Starting the initialization...");
+            long start = System.currentTimeMillis();
+
             initializeAll();
-            log.info("Starting the program...");
+            log.info("End of initialization in {}s", (System.currentTimeMillis() - start) / 1000.0F);
         } catch (Exception e) {
             log.error("Error while initializing the program {}", e.getMessage());
+        } finally {
+            System.gc();
         }
     }
 }

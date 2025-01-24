@@ -1,6 +1,7 @@
 package com.godpalace.student.module;
 
 import com.godpalace.student.Teacher;
+import com.godpalace.student.manager.ThreadPoolManager;
 import lombok.extern.slf4j.Slf4j;
 
 import java.awt.*;
@@ -23,45 +24,47 @@ public class NetworkCheckModule implements Module {
 
     @Override
     public void execute(Teacher teacher, ByteBuffer data) {
-        boolean isAlive;
+        ThreadPoolManager.getExecutor().execute(() -> {
+            boolean isAlive;
 
-        Frame lockFrame = new Frame();
-        lockFrame.setUndecorated(true);
-        lockFrame.setAlwaysOnTop(true);
-        lockFrame.setType(Frame.Type.UTILITY);
-        lockFrame.setBackground(Color.BLACK);
-        lockFrame.setSize(Toolkit.getDefaultToolkit().getScreenSize());
-        lockFrame.setCursor(Toolkit.getDefaultToolkit().createCustomCursor(
-                new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB),
-                new Point(0, 0), "invisible cursor"));
+            Frame lockFrame = new Frame();
+            lockFrame.setUndecorated(true);
+            lockFrame.setAlwaysOnTop(true);
+            lockFrame.setType(Frame.Type.UTILITY);
+            lockFrame.setBackground(Color.BLACK);
+            lockFrame.setSize(Toolkit.getDefaultToolkit().getScreenSize());
+            lockFrame.setCursor(Toolkit.getDefaultToolkit().createCustomCursor(
+                    new BufferedImage(16, 16, BufferedImage.TYPE_INT_ARGB),
+                    new Point(0, 0), "invisible cursor"));
 
-        while (true) {
-            try {
-                isAlive = false;
+            while (true) {
+                try {
+                    isAlive = false;
 
-                Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
-                while (interfaces.hasMoreElements()) {
-                    NetworkInterface networkInterface = interfaces.nextElement();
+                    Enumeration<NetworkInterface> interfaces = NetworkInterface.getNetworkInterfaces();
+                    while (interfaces.hasMoreElements()) {
+                        NetworkInterface networkInterface = interfaces.nextElement();
 
-                    if (networkInterface.isUp()) {
-                        byte[] mac = networkInterface.getHardwareAddress();
+                        if (networkInterface.isUp()) {
+                            byte[] mac = networkInterface.getHardwareAddress();
 
-                        if (mac != null) {
-                            isAlive = true;
-                            break;
+                            if (mac != null) {
+                                isAlive = true;
+                                break;
+                            }
                         }
                     }
-                }
 
-                lockFrame.setVisible(!isAlive);
-                synchronized (this) {
-                    wait(3000);
+                    lockFrame.setVisible(!isAlive);
+                    synchronized (this) {
+                        wait(3000);
+                    }
+                } catch (Exception e) {
+                    log.error("NetworkCheckModule error", e);
+                    break;
                 }
-            } catch (Exception e) {
-                log.error("NetworkCheckModule error", e);
-                break;
             }
-        }
+        });
     }
 
     @Override

@@ -2,7 +2,7 @@ package com.godpalace.student.module;
 
 import com.godpalace.student.Main;
 import com.godpalace.student.Teacher;
-import com.godpalace.student.ThreadPoolManager;
+import com.godpalace.student.manager.ThreadPoolManager;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.InputStream;
@@ -38,7 +38,7 @@ public class ReverseConnectModule implements Module {
                 // 读取配置文件
                 URL url = ReverseConnectModule.class.getResource("/ReverseConnectConfig.data");
                 if (url == null) {
-                    log.debug("Failed to find config file. Not enable reverse connect");
+                    log.warn("Failed to find config file.");
                     return;
                 }
 

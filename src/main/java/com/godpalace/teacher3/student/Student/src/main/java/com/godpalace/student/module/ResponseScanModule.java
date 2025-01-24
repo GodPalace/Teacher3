@@ -3,7 +3,7 @@ package com.godpalace.student.module;
 import com.godpalace.student.Main;
 import com.godpalace.student.NetworkCore;
 import com.godpalace.student.Teacher;
-import com.godpalace.student.ThreadPoolManager;
+import com.godpalace.student.manager.ThreadPoolManager;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.*;

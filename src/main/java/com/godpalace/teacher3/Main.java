@@ -1,6 +1,6 @@
 package com.godpalace.teacher3;
 
-import com.godpalace.teacher3.module.ModuleManager;
+import com.godpalace.teacher3.manager.ModuleManager;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 

@@ -1,7 +1,7 @@
 package com.godpalace.teacher3;
 
+import com.godpalace.teacher3.manager.ModuleManager;
 import com.godpalace.teacher3.module.Module;
-import com.godpalace.teacher3.module.ModuleManager;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;

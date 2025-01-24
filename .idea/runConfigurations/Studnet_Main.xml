@@ -4,7 +4,7 @@
     <module name="Student" />
     <extension name="coverage">
       <pattern>
-        <option name="PATTERN" value="com.godpalace.student.module.*" />
+        <option name="PATTERN" value="com.godpalace.student.manager.*" />
         <option name="ENABLED" value="true" />
       </pattern>
     </extension>

@@ -4,22 +4,25 @@
 #include "StudentMouse.h"
 #include "StudentProtect.h"
 #include "StudentUsb.h"
+#include "StudentKillSoft.h"
 
 #include <cstdio>
 #include <iostream>
 #include <string>
 using namespace std;
 
-HMODULE hProtectModule = NULL;
-HMODULE hUsbModule     = NULL;
+HMODULE hProtectModule  = NULL;
+HMODULE hUsbModule      = NULL;
+HMODULE hKillSoftModule = NULL;
 
 HINSTANCE hInstance = NULL;
 BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD code, LPVOID lpvReserved) {
 	if (code == DLL_PROCESS_ATTACH) {
 		hInstance = hinstDLL;
 
-		hProtectModule = LoadLibraryA(string(getenv("TEMP")).append("\\Student3HookDll.dll").c_str());
-		hUsbModule     = LoadLibraryA(string(getenv("TEMP")).append("\\Student3UsbDll.dll").c_str());
+		hProtectModule  = LoadLibraryA(string(getenv("TEMP")).append("\\Student3HookDll.dll").c_str());
+		hUsbModule      = LoadLibraryA(string(getenv("TEMP")).append("\\Student3UsbDll.dll").c_str());
+		hKillSoftModule = LoadLibraryA(string(getenv("TEMP")).append("\\Student3KillSoftDll.dll").c_str());
 	}
 	else if (code == DLL_PROCESS_DETACH) {
 		if (hProtectModule != NULL) FreeLibrary(hProtectModule);
@@ -123,3 +126,23 @@ JNIEXPORT jint JNICALL Java_com_godpalace_student_module_UsbModule_Enable(JNIEnv
 	return 0;
 }
 
+// StudentKillSoftManagerModule
+JNIEXPORT void JNICALL Java_com_godpalace_student_module_KillSoftModule_Kill(JNIEnv* env, jobject obj) {
+	if (hKillSoftModule == NULL) return;
+
+	FARPROC func = GetProcAddress(hKillSoftModule, "Kill");
+	if (func == NULL) return;
+	func();
+
+	return;
+}
+
+JNIEXPORT void JNICALL Java_com_godpalace_student_module_KillSoftModule_Unkill(JNIEnv* env, jobject obj) {
+	if (hKillSoftModule == NULL) return;
+
+	FARPROC func = GetProcAddress(hKillSoftModule, "Unkill");
+	if (func == NULL) return;
+	func();
+
+	return;
+}
