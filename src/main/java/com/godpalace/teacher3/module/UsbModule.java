@@ -1,11 +1,11 @@
 package com.godpalace.teacher3.module;
 
 import com.godpalace.teacher3.Student;
-import com.godpalace.teacher3.StudentManager;
+import com.godpalace.teacher3.manager.StudentManager;
+import javafx.scene.control.Button;
+import javafx.scene.image.Image;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.swing.*;
-import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -21,7 +21,7 @@ public class UsbModule implements Module {
 
     @Override
     public String getName() {
-        return "USB管理模块";
+        return "USB管理";
     }
 
     @Override
@@ -30,12 +30,12 @@ public class UsbModule implements Module {
     }
 
     @Override
-    public BufferedImage getIcon() {
+    public Image getIcon() {
         return null;
     }
 
     @Override
-    public JButton getGuiButton() {
+    public Button getGuiButton() {
         return createButton();
     }
 

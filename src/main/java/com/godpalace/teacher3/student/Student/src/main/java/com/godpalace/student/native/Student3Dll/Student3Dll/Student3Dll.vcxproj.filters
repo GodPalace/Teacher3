@@ -32,7 +32,7 @@
     <ClInclude Include="StudentUsb.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="StudentKillSoft.h">
+    <ClInclude Include="StudentFileManager.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

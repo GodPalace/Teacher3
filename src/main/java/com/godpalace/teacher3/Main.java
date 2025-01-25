@@ -1,6 +1,7 @@
 package com.godpalace.teacher3;
 
 import com.godpalace.teacher3.manager.ModuleManager;
+import javafx.application.Application;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
@@ -58,9 +59,12 @@ public class Main {
 
     public static void main(String[] args) {
         try {
+            long start = System.currentTimeMillis();
             log.info("Starting the initialization...");
+
             initializeAll();
-            log.info("Starting the program...");
+            log.info("Starting the program..., use time: {}s",
+                    (System.currentTimeMillis() - start) / 1000.0F);
         } catch (Exception e) {
             log.error("Error while initializing the program", e);
             System.exit(1);
@@ -81,10 +85,12 @@ public class Main {
     }
 
     private static void guiLunch() {
+        System.out.println("======GUI模式启动成功======");
+        Application.launch(TeacherGUI.class);
     }
 
     private static void cmdLunch() {
         System.out.println("======命令行模式启动成功======");
-        new TeacherCmd(System.in, System.out).start();
+        new TeacherCMD(System.in, System.out).start();
     }
 }

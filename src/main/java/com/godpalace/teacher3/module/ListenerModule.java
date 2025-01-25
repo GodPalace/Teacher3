@@ -1,11 +1,11 @@
 package com.godpalace.teacher3.module;
 
 import com.godpalace.teacher3.NetworkListener;
+import javafx.scene.control.Button;
+import javafx.scene.image.Image;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.swing.*;
-import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 
@@ -19,7 +19,7 @@ public class ListenerModule implements Module {
 
     @Override
     public String getName() {
-        return "监听器模块";
+        return "监听器";
     }
 
     @Override
@@ -28,12 +28,12 @@ public class ListenerModule implements Module {
     }
 
     @Override
-    public BufferedImage getIcon() {
+    public Image getIcon() {
         return null;
     }
 
     @Override
-    public JButton getGuiButton() {
+    public Button getGuiButton() {
         return createButton();
     }
 

@@ -24,6 +24,8 @@ public class FileManagerModule implements Module {
     private static final short RENAME_FILE   = DELETE_FILE + 1;
     private static final short UPLOAD_FILE   = RENAME_FILE + 1;
     private static final short DOWNLOAD_FILE = UPLOAD_FILE + 1;
+    private static final short LOCK_FILE     = DOWNLOAD_FILE + 1;
+    private static final short UNLOCK_FILE   = LOCK_FILE + 1;
 
     private static final short SUCCESS              = 0x01;
     private static final short ERROR_NOT_FOUND_PATH = SUCCESS + 1;
@@ -33,6 +35,10 @@ public class FileManagerModule implements Module {
     private static final short ERROR_CREATE_FILE    = ERROR_INVALID_FILE + 1;
     private static final short ERROR_DELETE_FILE    = ERROR_CREATE_FILE + 1;
     private static final short ERROR_RENAME_FILE    = ERROR_DELETE_FILE + 1;
+    private static final short ERROR_LOCK_FILE      = ERROR_RENAME_FILE + 1;
+
+    private static native boolean LockFile(String path);
+    private static native boolean UnlockFile(String path);
 
     @Override
     public short getID() {
@@ -284,6 +290,40 @@ public class FileManagerModule implements Module {
                 channel.close();
                 file.delete();
                 return;
+            }
+
+            case LOCK_FILE -> {
+                int pathLength = data.getInt();
+                byte[] pathBytes = new byte[pathLength];
+                data.get(pathBytes);
+                String path = new String(pathBytes);
+
+                if (new File(path).exists()) {
+                    if (!LockFile(path)) {
+                        response = ERROR_LOCK_FILE;
+                        log.info("Failed to lock file: {}", path);
+                    }
+                } else {
+                    response = ERROR_NOT_FOUND_FILE;
+                    log.info("Not found file: {}", path);
+                }
+            }
+
+            case UNLOCK_FILE -> {
+                int pathLength = data.getInt();
+                byte[] pathBytes = new byte[pathLength];
+                data.get(pathBytes);
+                String path = new String(pathBytes);
+
+                if (new File(path).exists()) {
+                    if (!UnlockFile(path)) {
+                        response = ERROR_LOCK_FILE;
+                        log.info("Failed to unlock file: {}", path);
+                    }
+                } else {
+                    response = ERROR_NOT_FOUND_FILE;
+                    log.info("Not found file: {}", path);
+                }
             }
 
             default -> log.info("Unknown command: {}", command);

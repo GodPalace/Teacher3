@@ -1,11 +1,11 @@
 package com.godpalace.teacher3.module;
 
 import com.godpalace.teacher3.Student;
-import com.godpalace.teacher3.StudentManager;
+import com.godpalace.teacher3.manager.StudentManager;
+import javafx.scene.control.Button;
+import javafx.scene.image.Image;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.swing.*;
-import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -18,7 +18,7 @@ public class LightScreenModule implements Module {
 
     @Override
     public String getName() {
-        return "闪屏模块";
+        return "闪屏";
     }
 
     @Override
@@ -27,15 +27,15 @@ public class LightScreenModule implements Module {
     }
 
     @Override
-    public BufferedImage getIcon() {
+    public Image getIcon() {
         return null;
     }
 
     @Override
-    public JButton getGuiButton() {
-        JButton button = createButton();
+    public Button getGuiButton() {
+        Button button = createButton();
 
-        button.addActionListener(e -> {
+        button.setOnAction(e -> {
             for (Student student : StudentManager.getSelectedStudents()) {
                 try {
                     sendRequest(student, ByteBuffer.allocate(0));

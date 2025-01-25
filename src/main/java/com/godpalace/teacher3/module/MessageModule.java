@@ -1,11 +1,13 @@
 package com.godpalace.teacher3.module;
 
 import com.godpalace.teacher3.Student;
-import com.godpalace.teacher3.StudentManager;
+import com.godpalace.teacher3.manager.StudentManager;
+import javafx.scene.control.Alert;
+import javafx.scene.control.Button;
+import javafx.scene.control.TextInputDialog;
+import javafx.scene.image.Image;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.swing.*;
-import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -18,7 +20,7 @@ public class MessageModule implements Module {
 
     @Override
     public String getName() {
-        return "消息发送模块";
+        return "发送消息";
     }
 
     @Override
@@ -27,7 +29,7 @@ public class MessageModule implements Module {
     }
 
     @Override
-    public BufferedImage getIcon() {
+    public Image getIcon() {
         return null;
     }
 
@@ -66,13 +68,16 @@ public class MessageModule implements Module {
     }
 
     @Override
-    public JButton getGuiButton() {
-        JButton button = createButton();
+    public Button getGuiButton() {
+        Button button = createButton();
 
-        button.addActionListener(e -> {
-            String message = JOptionPane.showInputDialog(null,
-                    "请输入要发送的消息:", "发送消息",
-                    JOptionPane.INFORMATION_MESSAGE);
+        button.setOnAction(e -> {
+            TextInputDialog dialog = new TextInputDialog();
+            dialog.setTitle("发送消息");
+            dialog.setHeaderText("请输入要发送的消息:");
+            dialog.showAndWait();
+
+            String message = dialog.getResult();
             if (message == null || message.isEmpty()) return;
 
             byte[] bytes = message.getBytes();
@@ -90,8 +95,10 @@ public class MessageModule implements Module {
                 }
             }
 
-            JOptionPane.showMessageDialog(null,
-                    "消息发送成功! 共有" + count + "个学生发送成功.");
+            Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setTitle("消息发送成功");
+            alert.setHeaderText("共有" + count + "个学生发送成功.");
+            alert.show();
         });
 
         return button;

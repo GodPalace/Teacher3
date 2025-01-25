@@ -1,5 +1,7 @@
 package com.godpalace.teacher3;
 
+import com.godpalace.teacher3.manager.ModuleManager;
+import com.godpalace.teacher3.manager.StudentManager;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -22,12 +24,26 @@ public class Student {
     private final String name;
 
     @Getter
+    private final String ip;
+
+    @Getter
+    private final int port;
+
+    @Getter
     private final int id;
+
+    @Getter
+    private final boolean[] status;
 
     public Student(SocketChannel channel) throws IOException {
         this.channel = channel;
         this.channel.configureBlocking(false);
-        name = channel.getRemoteAddress().toString();
+
+        name = ((InetSocketAddress) channel.getRemoteAddress()).getHostName();
+        ip = ((InetSocketAddress) channel.getRemoteAddress()).getAddress().getHostAddress();
+        port = ((InetSocketAddress) channel.getRemoteAddress()).getPort();
+
+        status = new boolean[ModuleManager.getModules().size() + 1];
         id = idCounter++;
     }
 
@@ -68,5 +84,10 @@ public class Student {
         } else {
             return false;
         }
+    }
+
+    @Override
+    public String toString() {
+        return "[" + id + "] " + name + "(" + ip + ":" + port + ")";
     }
 }

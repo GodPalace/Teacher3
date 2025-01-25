@@ -1,13 +1,13 @@
 package com.godpalace.teacher3.module;
 
 import com.godpalace.teacher3.Student;
-import com.godpalace.teacher3.StudentManager;
 import com.godpalace.teacher3.listener.StudentListener;
+import com.godpalace.teacher3.manager.StudentManager;
+import javafx.scene.control.Button;
+import javafx.scene.image.Image;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.swing.*;
-import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.BindException;
 import java.net.InetSocketAddress;
@@ -31,6 +31,8 @@ public class FileManagerModule implements Module {
     private static final short RENAME_FILE   = DELETE_FILE + 1;
     private static final short UPLOAD_FILE   = RENAME_FILE + 1;
     private static final short DOWNLOAD_FILE = UPLOAD_FILE + 1;
+    private static final short LOCK_FILE     = DOWNLOAD_FILE + 1;
+    private static final short UNLOCK_FILE   = LOCK_FILE + 1;
 
     private static final short SUCCESS              = 0x01;
     private static final short ERROR_NOT_FOUND_PATH = SUCCESS + 1;
@@ -40,6 +42,7 @@ public class FileManagerModule implements Module {
     private static final short ERROR_CREATE_FILE    = ERROR_INVALID_FILE + 1;
     private static final short ERROR_DELETE_FILE    = ERROR_CREATE_FILE + 1;
     private static final short ERROR_RENAME_FILE    = ERROR_DELETE_FILE + 1;
+    private static final short ERROR_LOCK_FILE      = ERROR_RENAME_FILE + 1;
 
     @Getter
     private static final HashMap<Student, String> curDirs = new HashMap<>();
@@ -65,7 +68,7 @@ public class FileManagerModule implements Module {
 
     @Override
     public String getName() {
-        return "文件管理模块";
+        return "文件管理";
     }
 
     @Override
@@ -74,12 +77,12 @@ public class FileManagerModule implements Module {
     }
 
     @Override
-    public BufferedImage getIcon() {
+    public Image getIcon() {
         return null;
     }
 
     @Override
-    public JButton getGuiButton() {
+    public Button getGuiButton() {
         return createButton();
     }
 
@@ -104,7 +107,10 @@ public class FileManagerModule implements Module {
                       rename [old] [new] - 重命名文件
                     
                       upload [local_file] - 上传文件到当前目录
-                      download [remote_file] - 下载文件到本地""");
+                      download [remote_file] - 下载文件到本地
+                    
+                      lock [name] - 锁定文件, 目录, 设备
+                      unlock [name] - 解锁文件, 目录, 设备""");
     }
 
     @Override
@@ -610,6 +616,98 @@ public class FileManagerModule implements Module {
                         System.out.println("下载失败: " + e.getMessage());
                         break;
                     }
+                }
+            }
+
+            case "lock" -> {
+                if (args.length != 2) {
+                    System.out.println("命令格式错误, 请使用格式: file lock [name]");
+                    return;
+                }
+
+                // 锁定文件
+                Student student = StudentManager.getFirstSelectedStudent();
+                if (student == null) return;
+                String curDir = curDirs.get(student);
+
+                String arg = args[1].trim();
+                if (arg.startsWith(File.separator)) arg = arg.substring(1);
+                if (arg.endsWith(File.separator)) arg = arg.substring(0, arg.length() - 1);
+
+                String path = (arg.contains(":") ? arg : curDir + arg);
+                File localFile = new File(path.substring(
+                        path.lastIndexOf(File.separator) + 1));
+                byte[] bytes = path.getBytes();
+
+                // 发送请求
+                requestBytes.write(ByteBuffer.allocate(2).putShort(LOCK_FILE).array());
+                requestBytes.write(ByteBuffer.allocate(4).putInt(bytes.length).array());
+                requestBytes.write(bytes);
+
+                requestBytes.flush();
+                sendRequest(student, requestBytes.toByteArray());
+                requestBytes.close();
+
+                ByteBuffer response = ByteBuffer.allocate(4);
+                while (student.getChannel().read(response) != 4) Thread.yield();
+                response.flip();
+                int size = response.getInt();
+
+                response = ByteBuffer.allocate(size);
+                student.getChannel().read(response);
+                response.flip();
+
+                // 处理响应
+                switch (response.getShort()) {
+                    case SUCCESS -> System.out.println("锁定成功");
+                    case ERROR_NOT_FOUND_FILE -> System.out.println("文件不存在");
+                    case ERROR_LOCK_FILE -> System.out.println("锁定失败");
+                }
+            }
+
+            case "unlock" -> {
+                if (args.length != 2) {
+                    System.out.println("命令格式错误, 请使用格式: file unlock [name]");
+                    return;
+                }
+
+                // 解锁文件
+                Student student = StudentManager.getFirstSelectedStudent();
+                if (student == null) return;
+                String curDir = curDirs.get(student);
+
+                String arg = args[1].trim();
+                if (arg.startsWith(File.separator)) arg = arg.substring(1);
+                if (arg.endsWith(File.separator)) arg = arg.substring(0, arg.length() - 1);
+
+                String path = (arg.contains(":") ? arg : curDir + arg);
+                File localFile = new File(path.substring(
+                        path.lastIndexOf(File.separator) + 1));
+                byte[] bytes = path.getBytes();
+
+                // 发送请求
+                requestBytes.write(ByteBuffer.allocate(2).putShort(UNLOCK_FILE).array());
+                requestBytes.write(ByteBuffer.allocate(4).putInt(bytes.length).array());
+                requestBytes.write(bytes);
+
+                requestBytes.flush();
+                sendRequest(student, requestBytes.toByteArray());
+                requestBytes.close();
+
+                ByteBuffer response = ByteBuffer.allocate(4);
+                while (student.getChannel().read(response) != 4) Thread.yield();
+                response.flip();
+                int size = response.getInt();
+
+                response = ByteBuffer.allocate(size);
+                student.getChannel().read(response);
+                response.flip();
+
+                // 处理响应
+                switch (response.getShort()) {
+                    case SUCCESS -> System.out.println("解锁成功");
+                    case ERROR_NOT_FOUND_FILE -> System.out.println("文件不存在");
+                    case ERROR_LOCK_FILE -> System.out.println("解锁失败, 可能是文件未被锁定");
                 }
             }
 

@@ -1,12 +1,11 @@
 package com.godpalace.teacher3.module;
 
 import com.godpalace.teacher3.Student;
-import com.godpalace.teacher3.StudentManager;
+import com.godpalace.teacher3.manager.StudentManager;
+import javafx.scene.control.Button;
+import javafx.scene.image.Image;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.swing.*;
-import java.awt.*;
-import java.awt.image.BufferedImage;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -20,7 +19,7 @@ public class ShellModule implements Module {
 
     @Override
     public String getName() {
-        return "远程命令执行模块";
+        return "远程命令执行";
     }
 
     @Override
@@ -29,18 +28,15 @@ public class ShellModule implements Module {
     }
 
     @Override
-    public BufferedImage getIcon() {
+    public Image getIcon() {
         return null;
     }
 
     @Override
-    public JButton getGuiButton() {
-        JButton button = createButton();
+    public Button getGuiButton() {
+        Button button = createButton();
 
-        button.addActionListener(e -> {
-            JDialog dialog = new JDialog((Frame) null, "远程命令执行模块");
-            dialog.setSize(600, 400);
-            dialog.setLocationRelativeTo(null);
+        button.setOnAction(e -> {
         });
 
         return button;

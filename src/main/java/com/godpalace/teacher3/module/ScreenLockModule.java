@@ -1,31 +1,29 @@
 package com.godpalace.teacher3.module;
 
 import com.godpalace.teacher3.Student;
-import com.godpalace.teacher3.StudentManager;
+import com.godpalace.teacher3.listener.StudentListener;
+import com.godpalace.teacher3.manager.StudentManager;
+import javafx.scene.control.Button;
+import javafx.scene.image.Image;
 import lombok.extern.slf4j.Slf4j;
 
-import javax.imageio.ImageIO;
-import javax.swing.*;
-import java.awt.image.BufferedImage;
 import java.net.URL;
 import java.nio.ByteBuffer;
 
 @Slf4j
 public class ScreenLockModule implements Module {
-    private static BufferedImage LOCK_ICON = null;
+    private static Image LOCK_ICON = null;
 
     static {
         try {
             URL url = ScreenLockModule.class.getResource("/icon/ScreenLockIcon.png");
             if (url != null) {
-                LOCK_ICON = ImageIO.read(url);
+                LOCK_ICON = new Image(url.openStream());
             }
         } catch (Exception e) {
             log.error("Failed to load lock icon", e);
         }
     }
-
-    private boolean isLocked = false;
 
     @Override
     public short getID() {
@@ -34,7 +32,7 @@ public class ScreenLockModule implements Module {
 
     @Override
     public String getName() {
-        return "屏幕锁定模块";
+        return "屏幕锁定";
     }
 
     @Override
@@ -43,7 +41,7 @@ public class ScreenLockModule implements Module {
     }
 
     @Override
-    public BufferedImage getIcon() {
+    public Image getIcon() {
         return LOCK_ICON;
     }
 
@@ -98,22 +96,36 @@ public class ScreenLockModule implements Module {
     }
 
     @Override
-    public JButton getGuiButton() {
-        JButton button = createButton();
+    public Button getGuiButton() {
+        Button button = createButton();
 
-        button.addActionListener(e -> {
+        button.setOnAction(e -> {
             Student student = StudentManager.getFirstSelectedStudent();
 
             if (student != null) {
                 ByteBuffer data = ByteBuffer.allocate(1);
-                data.putChar((isLocked? '0' : '1'));
+                data.putChar((getStatus(student)? '0' : '1'));
                 data.flip();
 
                 try {
                     sendRequest(student, data);
-                    isLocked = !isLocked;
+                    setStatus(student, !getStatus(student));
                 } catch (Exception ex) {
                     log.error("Failed to execute command", ex);
+                }
+            }
+        });
+
+        StudentManager.addListener(new StudentListener() {
+            @Override
+            public void onStudentSelected(Student student) {
+                button.setText(getStatus(student)? "解锁屏幕" : "锁定屏幕");
+            }
+
+            @Override
+            public void onStudentDeselected(Student student) {
+                if (StudentManager.getSelectedStudents().isEmpty()) {
+                    button.setText("锁定屏幕");
                 }
             }
         });

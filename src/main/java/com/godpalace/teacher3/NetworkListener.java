@@ -1,5 +1,6 @@
 package com.godpalace.teacher3;
 
+import com.godpalace.teacher3.manager.StudentManager;
 import com.godpalace.teacher3.manager.ThreadPoolManager;
 import lombok.Getter;
 import lombok.Setter;
@@ -13,7 +14,7 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.Vector;
 
 @Getter
 @Slf4j
@@ -57,7 +58,7 @@ public class NetworkListener {
                             }
 
                             Student student = new Student(accept);
-                            CopyOnWriteArrayList<Student> students = StudentManager.getStudents();
+                            Vector<Student> students = StudentManager.getStudents();
 
                             int index = students.indexOf(student);
                             if (index >= 0) {
