@@ -1,20 +1,31 @@
 package com.godpalace.teacher3;
 
 import com.github.kwhat.jnativehook.GlobalScreen;
-import com.godpalace.teacher3.fx.TeacherScene;
+import com.godpalace.teacher3.fx.SceneBuilder;
+import com.godpalace.teacher3.fx.menu.FXMenu;
+import com.godpalace.teacher3.manager.MenuManager;
 import com.godpalace.teacher3.manager.ModuleManager;
 import com.godpalace.teacher3.manager.StudentManager;
 import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.geometry.Orientation;
 import javafx.scene.Parent;
+import javafx.scene.control.MenuBar;
 import javafx.scene.control.SplitPane;
+import javafx.scene.image.Image;
+import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
+import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+
+import java.io.InputStream;
 
 @Slf4j
 public class TeacherGUI extends Application {
-    @Override
-    public void init() {
+    @Getter
+    private static Image icon;
+
+    private void initializeHook() {
         try {
             GlobalScreen.registerNativeHook();
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -29,7 +40,26 @@ public class TeacherGUI extends Application {
         }
     }
 
-    private static Parent getRootPane() {
+    private void initializeIcon() {
+        InputStream stream = TeacherGUI.class.getResourceAsStream("/icon.png");
+        if (stream == null) {
+            log.error("Icon not found");
+            return;
+        }
+
+        icon = new Image(stream);
+    }
+
+    @Override
+    public void init() {
+        initializeHook();
+        initializeIcon();
+
+        MenuManager.initialize();
+        ModuleManager.initializeButtons();
+    }
+
+    private static Parent getContextPane() {
         SplitPane root = new SplitPane();
         root.setOrientation(Orientation.VERTICAL);
         root.setDividerPositions(0.6);
@@ -40,21 +70,48 @@ public class TeacherGUI extends Application {
         return root;
     }
 
+    private static MenuBar getMenuBar() {
+        MenuBar menuBar = new MenuBar();
+        menuBar.setStyle("-fx-background-color: #EEEEEE;");
+
+        for (FXMenu menu : MenuManager.getMenus()) {
+            menuBar.getMenus().add(menu);
+        }
+
+        return menuBar;
+    }
+
+    private static Parent getRootPane() {
+        BorderPane root = new BorderPane();
+        Parent contextPane = getContextPane();
+        MenuBar menuBar = getMenuBar();
+
+        root.setTop(menuBar);
+        root.setCenter(contextPane);
+
+        return root;
+    }
+
     @Override
     public void start(Stage stage) {
         stage.setTitle("Teacher v3");
-        stage.setWidth(800);
+        stage.getIcons().add(icon);
+        stage.setWidth(816);
         stage.setHeight(600);
-        stage.setMinWidth(640);
+        stage.setMinWidth(656);
         stage.setMinHeight(560);
 
         Parent rootPane = getRootPane();
-        stage.setScene(new TeacherScene(stage, rootPane).configure().build());
+        stage.setScene(new SceneBuilder(rootPane).css().build());
 
         stage.show();
     }
 
     @Override
     public void stop() {
+        log.info("Stopping the application");
+
+        Platform.exit();
+        System.exit(0);
     }
 }

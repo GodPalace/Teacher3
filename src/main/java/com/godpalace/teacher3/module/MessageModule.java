@@ -7,6 +7,8 @@ import javafx.scene.control.Button;
 import javafx.scene.control.TextInputDialog;
 import javafx.scene.image.Image;
 import lombok.extern.slf4j.Slf4j;
+import org.kordamp.ikonli.boxicons.BoxiconsRegular;
+import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -29,7 +31,7 @@ public class MessageModule implements Module {
     }
 
     @Override
-    public Image getIcon() {
+    public Image getStatusImage() {
         return null;
     }
 
@@ -73,6 +75,7 @@ public class MessageModule implements Module {
 
         button.setOnAction(e -> {
             TextInputDialog dialog = new TextInputDialog();
+            dialog.setGraphic(new FontIcon(BoxiconsRegular.MESSAGE_SQUARE_DETAIL));
             dialog.setTitle("发送消息");
             dialog.setHeaderText("请输入要发送的消息:");
             dialog.showAndWait();
@@ -96,6 +99,7 @@ public class MessageModule implements Module {
             }
 
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
+            alert.setGraphic(new FontIcon(BoxiconsRegular.CHECK_CIRCLE));
             alert.setTitle("消息发送成功");
             alert.setHeaderText("共有" + count + "个学生发送成功.");
             alert.show();

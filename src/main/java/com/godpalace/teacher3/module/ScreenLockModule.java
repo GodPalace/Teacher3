@@ -41,7 +41,7 @@ public class ScreenLockModule implements Module {
     }
 
     @Override
-    public Image getIcon() {
+    public Image getStatusImage() {
         return LOCK_ICON;
     }
 
@@ -63,7 +63,7 @@ public class ScreenLockModule implements Module {
                 try {
                     for (Student student : StudentManager.getSelectedStudents()) {
                         ByteBuffer data = ByteBuffer.allocate(2);
-                        data.putChar('1');
+                        data.putShort((short) 1);
                         data.flip();
 
                         sendRequest(student, data);
@@ -78,8 +78,8 @@ public class ScreenLockModule implements Module {
             case "off":
                 try {
                     for (Student student : StudentManager.getSelectedStudents()) {
-                        ByteBuffer data = ByteBuffer.allocate(1);
-                        data.putChar('0');
+                        ByteBuffer data = ByteBuffer.allocate(2);
+                        data.putShort((short) 0);
                         data.flip();
 
                         sendRequest(student, data);
@@ -103,8 +103,8 @@ public class ScreenLockModule implements Module {
             Student student = StudentManager.getFirstSelectedStudent();
 
             if (student != null) {
-                ByteBuffer data = ByteBuffer.allocate(1);
-                data.putChar((getStatus(student)? '0' : '1'));
+                ByteBuffer data = ByteBuffer.allocate(2);
+                data.putShort((short) (!getStatus(student) ? 1 : 0));
                 data.flip();
 
                 try {

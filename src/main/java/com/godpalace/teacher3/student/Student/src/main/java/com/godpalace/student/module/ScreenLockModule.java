@@ -32,8 +32,8 @@ public class ScreenLockModule implements Module {
 
     @Override
     public void execute(Teacher teacher, ByteBuffer buffer) {
-        char c = buffer.getChar();
-        lockFrame.setVisible(c == '1');
+        short cmd = buffer.getShort();
+        lockFrame.setVisible(cmd == 1);
     }
 
     @Override

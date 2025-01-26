@@ -11,6 +11,7 @@ import java.net.InetSocketAddress;
 import java.net.NetworkInterface;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Locale;
 
 @Slf4j
 public class Main {
@@ -22,7 +23,7 @@ public class Main {
     private static final HashMap<InetAddress, NetworkInterface> addresses = new HashMap<>();
 
     @Getter
-    private static boolean isHeadless;
+    private static boolean isRunOnCmd;
 
     private static void initializeAll() throws Exception {
         // Initialize the database
@@ -42,7 +43,7 @@ public class Main {
 
                     // Register a network listener for the address
                     NetworkListener listener = new NetworkListener(
-                            new InetSocketAddress(address, SCAN_PORT));
+                            new InetSocketAddress(address, SCAN_PORT), false);
                     NetworkListener.getScanListeners().add(listener);
 
                     log.debug("Added address: {}", address.getHostAddress());
@@ -58,12 +59,14 @@ public class Main {
     }
 
     public static void main(String[] args) {
+        Locale.setDefault(Locale.CHINA);
+
         try {
             long start = System.currentTimeMillis();
             log.info("Starting the initialization...");
 
             initializeAll();
-            log.info("Starting the program..., use time: {}s",
+            log.info("End of initialization in {}s",
                     (System.currentTimeMillis() - start) / 1000.0F);
         } catch (Exception e) {
             log.error("Error while initializing the program", e);
@@ -73,10 +76,10 @@ public class Main {
         GraphicsEnvironment environment = GraphicsEnvironment.getLocalGraphicsEnvironment();
 
         if (args.length == 0 && !environment.isHeadlessInstance()) {
-            isHeadless = false;
+            isRunOnCmd = false;
             guiLunch();
         } else if (args[0].equals("--cmd") || args[0].equals("-c") || environment.isHeadlessInstance()) {
-            isHeadless = true;
+            isRunOnCmd = true;
             cmdLunch();
         } else {
             System.out.println("未知的启动参数, 请使用 --cmd 或 -c 启动命令行模式或者直接运行程序");

@@ -2,8 +2,8 @@ package com.godpalace.teacher3;
 
 import com.godpalace.teacher3.manager.StudentManager;
 import com.godpalace.teacher3.manager.ThreadPoolManager;
+import javafx.collections.ObservableList;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
@@ -14,7 +14,6 @@ import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Vector;
 
 @Getter
 @Slf4j
@@ -29,9 +28,10 @@ public class NetworkListener {
         }
     }
 
-    @Setter
-    @Getter
     private static int idCounter = 0;
+
+    @Getter
+    private final int id;
 
     @Getter
     private static final HashMap<Integer, NetworkListener> listeners = new HashMap<>();
@@ -58,7 +58,7 @@ public class NetworkListener {
                             }
 
                             Student student = new Student(accept);
-                            Vector<Student> students = StudentManager.getStudents();
+                            ObservableList<Student> students = StudentManager.getStudents();
 
                             int index = students.indexOf(student);
                             if (index >= 0) {
@@ -74,9 +74,12 @@ public class NetworkListener {
                             }
 
                             StudentManager.addStudent(student);
-                            System.out.println("\n新的学生连接: " + student.getName()
-                                    + " (ID: " + student.getId() + ")");
-                            System.out.print("> ");
+
+                            if (Main.isRunOnCmd()) {
+                                System.out.println("\n新的学生连接: " + student.getName()
+                                        + " (ID: " + student.getId() + ")");
+                                System.out.print("> ");
+                            }
                         }
                     }
                 } catch (Exception e) {
@@ -90,10 +93,17 @@ public class NetworkListener {
     private final InetSocketAddress address;
     private ServerSocketChannel channel;
 
-    public NetworkListener(InetSocketAddress address) throws IOException {
+    public NetworkListener(InetSocketAddress address, boolean add) throws IOException {
         this.address = address;
         channel = ServerSocketChannel.open();
         channel.bind(address);
+
+        if (add) {
+            id = idCounter++;
+            listeners.put(id, this);
+        } else {
+            id = -1;
+        }
 
         channel.configureBlocking(false);
         channel.register(selector, SelectionKey.OP_ACCEPT).attach(this);
@@ -102,5 +112,10 @@ public class NetworkListener {
     public void close() throws IOException {
         channel.close();
         channel = null;
+    }
+
+    @Override
+    public String toString() {
+        return "[" + id + "] " + address.getAddress().getHostAddress() + ":" + address.getPort();
     }
 }

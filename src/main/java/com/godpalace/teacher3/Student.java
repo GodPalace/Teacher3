@@ -8,7 +8,9 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.StandardSocketOptions;
 import java.nio.channels.SocketChannel;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 @Slf4j
 public class Student {
@@ -33,17 +35,19 @@ public class Student {
     private final int id;
 
     @Getter
-    private final boolean[] status;
+    private final AtomicBoolean[] status;
 
     public Student(SocketChannel channel) throws IOException {
         this.channel = channel;
+        this.channel.setOption(StandardSocketOptions.SO_KEEPALIVE, true);
         this.channel.configureBlocking(false);
 
-        name = ((InetSocketAddress) channel.getRemoteAddress()).getHostName();
+        name = ((InetSocketAddress) channel.getRemoteAddress()).getAddress().getCanonicalHostName();
         ip = ((InetSocketAddress) channel.getRemoteAddress()).getAddress().getHostAddress();
         port = ((InetSocketAddress) channel.getRemoteAddress()).getPort();
 
-        status = new boolean[ModuleManager.getModules().size() + 1];
+        status = new AtomicBoolean[ModuleManager.getModules().size() + 1];
+        for (int i = 0; i < status.length; i++) status[i] = new AtomicBoolean(false);
         id = idCounter++;
     }
 

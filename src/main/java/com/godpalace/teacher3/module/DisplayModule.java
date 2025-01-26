@@ -36,7 +36,7 @@ public class DisplayModule implements Module {
     }
 
     @Override
-    public Image getIcon() {
+    public Image getStatusImage() {
         return null;
     }
 

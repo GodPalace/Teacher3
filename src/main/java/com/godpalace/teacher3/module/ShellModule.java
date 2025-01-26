@@ -19,7 +19,7 @@ public class ShellModule implements Module {
 
     @Override
     public String getName() {
-        return "远程命令执行";
+        return "远程命令";
     }
 
     @Override
@@ -28,7 +28,7 @@ public class ShellModule implements Module {
     }
 
     @Override
-    public Image getIcon() {
+    public Image getStatusImage() {
         return null;
     }
 

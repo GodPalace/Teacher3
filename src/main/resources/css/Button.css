@@ -1,0 +1,29 @@
+.button {
+    -fx-background-color: #EEEEEE;
+    -fx-border-color: #AAAAAA;
+    -fx-border-width: 1px;
+    -fx-font-size: 10px;
+}
+
+.button:hover {
+    -fx-background-color: #CCCCCC;
+    -fx-border-color: #555555;
+    -fx-border-width: 1px;
+    -fx-font-size: 11px;
+}
+
+.button:pressed {
+    -fx-background-color: #999999;
+    -fx-border-color: #777777;
+    -fx-border-width: 1px;
+    -fx-font-size: 9px;
+}
+
+.button:disabled {
+    -fx-background-color: #FFFFFF;
+    -fx-border-color: #BBBBBB;
+    -fx-border-width: 1px;
+    -fx-font-size: 10px;
+    -fx-opacity: 0.5;
+    -fx-color: #999999;
+}

@@ -23,6 +23,9 @@ public class ModuleManager {
     @Getter
     private static final ArrayList<Short> notSupportMultiSelections = new ArrayList<>();
 
+    @Getter
+    private static final ConcurrentHashMap<Short, Button> guiButtons = new ConcurrentHashMap<>();
+
     public static void initialize() throws Exception {
         try {
             ClassLoader loader = Thread.currentThread().getContextClassLoader();
@@ -52,15 +55,21 @@ public class ModuleManager {
         }
     }
 
+    public static void initializeButtons() {
+        for (Module module : modules.values()) {
+            Button button = module.getGuiButton();
+            if (button == null) continue;
+
+            guiButtons.put(module.getID(), button);
+        }
+    }
+
     public static Parent getUI() {
         FlowPane root = new FlowPane();
         root.setHgap(0);
         root.setVgap(0);
 
-        for (Module module : modules.values()) {
-            Button button = module.getGuiButton();
-            if (button == null) continue;
-
+        for (Button button : guiButtons.values()) {
             root.getChildren().add(button);
         }
 

@@ -28,13 +28,13 @@ public class ListenerModule implements Module {
     }
 
     @Override
-    public Image getIcon() {
+    public Image getStatusImage() {
         return null;
     }
 
     @Override
     public Button getGuiButton() {
-        return createButton();
+        return null;
     }
 
     @Override
@@ -90,14 +90,10 @@ public class ListenerModule implements Module {
                     return;
                 }
 
-                int id = NetworkListener.getIdCounter();
-
                 // 添加监听器
-                NetworkListener.getListeners().put(id,
-                        new NetworkListener(new InetSocketAddress(bind_ip, bind_port)));
-                System.out.println("添加监听器成功, 监听器ID: " + id);
-
-                NetworkListener.setIdCounter(id + 1);
+                NetworkListener listener = new NetworkListener(
+                        new InetSocketAddress(bind_ip, bind_port), true);
+                System.out.println("添加监听器成功, 监听器ID: " + listener.getId());
             }
 
             case "remove" -> {

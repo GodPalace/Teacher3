@@ -11,6 +11,7 @@ import java.net.NetworkInterface;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.Locale;
 
 @Slf4j
 public class Main {
@@ -58,6 +59,8 @@ public class Main {
     }
 
     public static void main(String[] args) {
+        Locale.setDefault(Locale.CHINA);
+
         // Initialize all
         try {
             log.info("Starting the initialization...");
