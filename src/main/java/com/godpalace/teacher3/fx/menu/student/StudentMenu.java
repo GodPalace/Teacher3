@@ -7,6 +7,7 @@ import javafx.scene.control.Alert;
 import org.kordamp.ikonli.boxicons.BoxiconsRegular;
 import org.kordamp.ikonli.javafx.FontIcon;
 
+import java.awt.*;
 import java.io.IOException;
 
 public class StudentMenu extends FXMenu {
@@ -15,7 +16,16 @@ public class StudentMenu extends FXMenu {
 
         addMenuItem("自动扫描", event -> {
             try {
-                StudentManager.scan();
+                if (StudentManager.scan()) {
+                    Toolkit.getDefaultToolkit().beep();
+                } else {
+                    Alert alert = new Alert(Alert.AlertType.ERROR);
+                    alert.setGraphic(new FontIcon(BoxiconsRegular.ERROR));
+                    alert.setTitle("错误");
+                    alert.setHeaderText("自动扫描失败");
+                    alert.setContentText("请检查网络连接或手动输入IP地址");
+                    alert.showAndWait();
+                }
             } catch (IOException e) {
                 Alert alert = new Alert(Alert.AlertType.ERROR);
                 alert.setGraphic(new FontIcon(BoxiconsRegular.ERROR));

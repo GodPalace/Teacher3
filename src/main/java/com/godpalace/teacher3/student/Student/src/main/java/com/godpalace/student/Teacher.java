@@ -4,6 +4,7 @@ import lombok.Getter;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.StandardSocketOptions;
 import java.nio.channels.SocketChannel;
 
 public class Teacher {
@@ -17,7 +18,14 @@ public class Teacher {
 
     public Teacher(SocketChannel channel) throws IOException {
         this.channel = channel;
+        this.channel.setOption(StandardSocketOptions.TCP_NODELAY, true);
+        this.channel.setOption(StandardSocketOptions.SO_RCVBUF, 10240);
+        this.channel.setOption(StandardSocketOptions.SO_KEEPALIVE, true);
+        this.channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
+        this.channel.setOption(StandardSocketOptions.SO_LINGER, 5);
+        this.channel.socket().setSoTimeout(0);
         this.channel.configureBlocking(false);
+
         this.ip = ((InetSocketAddress) channel.getRemoteAddress()).getAddress().getHostAddress();
     }
 

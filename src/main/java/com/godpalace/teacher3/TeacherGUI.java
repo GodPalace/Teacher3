@@ -1,7 +1,7 @@
 package com.godpalace.teacher3;
 
 import com.github.kwhat.jnativehook.GlobalScreen;
-import com.godpalace.teacher3.fx.SceneBuilder;
+import com.godpalace.teacher3.fx.SceneAutoConfigBuilder;
 import com.godpalace.teacher3.fx.menu.FXMenu;
 import com.godpalace.teacher3.manager.MenuManager;
 import com.godpalace.teacher3.manager.ModuleManager;
@@ -55,6 +55,7 @@ public class TeacherGUI extends Application {
         initializeHook();
         initializeIcon();
 
+        SceneAutoConfigBuilder.initializeCss();
         MenuManager.initialize();
         ModuleManager.initializeButtons();
     }
@@ -102,7 +103,7 @@ public class TeacherGUI extends Application {
         stage.setMinHeight(560);
 
         Parent rootPane = getRootPane();
-        stage.setScene(new SceneBuilder(rootPane).css().build());
+        stage.setScene(new SceneAutoConfigBuilder(rootPane).css().build());
 
         stage.show();
     }

@@ -12,7 +12,7 @@ import java.util.List;
 @Slf4j
 public class MenuManager {
     @Getter
-    private static ArrayList<FXMenu> menus = new ArrayList<>();
+    private static final ArrayList<FXMenu> menus = new ArrayList<>();
 
     public static void initialize() {
         try {

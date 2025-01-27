@@ -60,10 +60,8 @@ public class NetworkCore {
 
                             Teacher teacher = new Teacher(channel);
 
-                            if (!NetworkCore.getTeachers().contains(teacher)) {
-                                core.addTeacher(teacher);
-                                log.info("New teacher connected: {}", channel.getRemoteAddress());
-                            }
+                            core.addTeacher(teacher);
+                            log.info("New teacher connected: {}", channel.getRemoteAddress());
                         }
                     }
 
@@ -87,7 +85,8 @@ public class NetworkCore {
                 .attach(teacher);
     }
 
-    public void removeTeacher(Teacher teacher) throws IOException {
+    public static void removeTeacher(Teacher teacher) throws IOException {
+        teachers.remove(teacher);
         teacher.close();
     }
 

@@ -20,7 +20,7 @@ public class MessageModule implements Module{
     @Override
     public void execute(Teacher teacher, ByteBuffer data) throws Exception {
         DialogUtil.showMessage(
-                new String(data.array()),
+                new String(data.array(), "GB2312"),
                 Color.BLACK, Color.WHITE,
                 new Font("Arial", Font.PLAIN, 16),
                 3000);

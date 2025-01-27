@@ -44,6 +44,18 @@ public class ResponseScanModule implements Module {
 
                             try {
                                 if (request == 1) {
+                                    boolean hasSameTeacher = false;
+                                    for (Teacher t : NetworkCore.getTeachers()) {
+                                        InetSocketAddress addr =
+                                                (InetSocketAddress) t.getChannel().getRemoteAddress();
+
+                                        if (addr.getAddress().equals(packet.getAddress())) {
+                                            hasSameTeacher = true;
+                                            break;
+                                        }
+                                    }
+                                    if (hasSameTeacher) continue;
+
                                     // 表示教师希望连接
                                     SocketChannel channel = SocketChannel.open(
                                             new InetSocketAddress(packet.getAddress(), Main.SCAN_PORT));
@@ -51,12 +63,9 @@ public class ResponseScanModule implements Module {
 
                                     for (NetworkCore core : Main.getCores()) {
                                         if (core.getAddr().equals(packet.getAddress())) {
-                                            if (!NetworkCore.getTeachers().contains(newTeacher)) {
-                                                core.addTeacher(newTeacher);
-
-                                                log.debug("Added new teacher {} to core {}",
-                                                        newTeacher.getIp(), packet.getAddress());
-                                            }
+                                            core.addTeacher(newTeacher);
+                                            log.debug("Added new teacher {} to core {}",
+                                                    newTeacher.getIp(), packet.getAddress());
 
                                             break;
                                         }

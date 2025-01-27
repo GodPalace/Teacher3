@@ -39,7 +39,12 @@ public class Student {
 
     public Student(SocketChannel channel) throws IOException {
         this.channel = channel;
+        this.channel.setOption(StandardSocketOptions.TCP_NODELAY, true);
+        this.channel.setOption(StandardSocketOptions.SO_RCVBUF, 10240);
         this.channel.setOption(StandardSocketOptions.SO_KEEPALIVE, true);
+        this.channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
+        this.channel.setOption(StandardSocketOptions.SO_LINGER, 5);
+        this.channel.socket().setSoTimeout(0);
         this.channel.configureBlocking(false);
 
         name = ((InetSocketAddress) channel.getRemoteAddress()).getAddress().getCanonicalHostName();

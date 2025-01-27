@@ -2,6 +2,8 @@ package com.godpalace.teacher3.fx.menu.teacher.listener;
 
 import com.godpalace.teacher3.Main;
 import com.godpalace.teacher3.NetworkListener;
+import com.godpalace.teacher3.TeacherGUI;
+import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
@@ -28,6 +30,7 @@ public class ListenerAdderMenuStage extends Stage {
         super();
 
         this.setTitle("添加监听器");
+        this.getIcons().add(TeacherGUI.getIcon());
         this.setWidth(400);
         this.setHeight(300);
         this.setResizable(false);
@@ -49,13 +52,14 @@ public class ListenerAdderMenuStage extends Stage {
 
         // IP地址输入框
         HBox ipBox = new HBox();
+        ipBox.setPadding(new Insets(3));
         ipBox.setSpacing(10);
         ipBox.setPrefHeight(30);
         ipBox.setAlignment(Pos.CENTER_LEFT);
         AnchorPane.setTopAnchor(ipBox, 0.0);
         inputPane.getChildren().add(ipBox);
 
-        Text ipText = new Text(" IP:     ");
+        Text ipText = new Text("IP:     ");
         ipBox.getChildren().add(ipText);
 
         ipComboBox.setPromptText("请选择IP地址");
@@ -66,13 +70,14 @@ public class ListenerAdderMenuStage extends Stage {
 
         // 端口输入框
         HBox portBox = new HBox();
+        portBox.setPadding(new Insets(3));
         portBox.setSpacing(10);
         portBox.setPrefHeight(30);
         portBox.setAlignment(Pos.CENTER_LEFT);
         AnchorPane.setTopAnchor(portBox, 35.0);
         inputPane.getChildren().add(portBox);
 
-        Text portText = new Text(" 端口: ");
+        Text portText = new Text("端口: ");
         portBox.getChildren().add(portText);
 
         portInput.setPromptText("请输入端口号");
@@ -80,7 +85,8 @@ public class ListenerAdderMenuStage extends Stage {
 
         // 按钮
         HBox buttonBox = new HBox();
-        buttonBox.setSpacing(10);
+        buttonBox.setPadding(new Insets(3));
+        buttonBox.setSpacing(5);
         buttonBox.setPrefHeight(30);
         buttonBox.setAlignment(Pos.CENTER_RIGHT);
         root.setBottom(buttonBox);

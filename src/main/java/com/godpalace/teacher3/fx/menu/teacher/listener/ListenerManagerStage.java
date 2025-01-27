@@ -1,7 +1,8 @@
 package com.godpalace.teacher3.fx.menu.teacher.listener;
 
 import com.godpalace.teacher3.NetworkListener;
-import com.godpalace.teacher3.fx.SceneBuilder;
+import com.godpalace.teacher3.TeacherGUI;
+import com.godpalace.teacher3.fx.SceneAutoConfigBuilder;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
@@ -19,12 +20,13 @@ public class ListenerManagerStage extends Stage {
         super();
 
         this.setTitle("监听器管理");
+        this.getIcons().add(TeacherGUI.getIcon());
         this.setWidth(600);
         this.setHeight(400);
         this.setResizable(false);
         this.setOnCloseRequest(event -> this.close());
 
-        this.setScene(new SceneBuilder(initializeComponents()).css().build());
+        this.setScene(new SceneAutoConfigBuilder(initializeComponents()).css().build());
         this.requestFocus();
     }
 

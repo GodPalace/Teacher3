@@ -4,17 +4,27 @@ import com.godpalace.teacher3.Main;
 import com.godpalace.teacher3.Student;
 import com.godpalace.teacher3.listener.StudentListener;
 import javafx.collections.FXCollections;
+import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
+import javafx.geometry.Pos;
+import javafx.scene.Node;
 import javafx.scene.Parent;
-import javafx.scene.control.SelectionMode;
-import javafx.scene.control.TableColumn;
-import javafx.scene.control.TableView;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
+import javafx.scene.input.MouseButton;
+import javafx.scene.layout.HBox;
+import javafx.stage.Popup;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.kordamp.ikonli.boxicons.BoxiconsRegular;
+import org.kordamp.ikonli.javafx.FontIcon;
 
+import java.awt.*;
 import java.io.*;
 import java.net.*;
+import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
@@ -205,13 +215,45 @@ public class StudentManager {
     public static Student connect(String ip) throws IOException {
         InetSocketAddress address = new InetSocketAddress(ip, 37000);
         if (!address.getAddress().isReachable(3000))
-            throw new IOException(ip + "不是一个可达的IP地址");
+            return null;
 
         SocketChannel channel = SocketChannel.open(address);
         Student student = new Student(channel);
         students.add(student);
 
         return student;
+    }
+
+    public static void disconnect(Student student) throws IOException {
+        removeStudent(student);
+
+        ByteBuffer buffer = ByteBuffer.allocate(6);
+        buffer.putShort((short) 0x99);
+        buffer.putInt(0);
+        buffer.flip();
+        student.getChannel().write(buffer);
+        buffer.clear();
+
+        int count = 0;
+        while (student.getChannel().read(buffer) != 2) {
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                log.error("Error in StudentManager.disconnect, cause: {}", e.getMessage());
+            }
+
+            if (count++ > 5) {
+                throw new SocketTimeoutException("Timeout while waiting for response");
+            }
+        }
+        buffer.flip();
+        int code = buffer.getShort();
+
+        if (code == 0x00) {
+            student.close();
+        } else {
+            throw new IOException("Error while disconnecting: " + code);
+        }
     }
 
     public static boolean scan() throws IOException {
@@ -319,24 +361,94 @@ public class StudentManager {
     private static void onListChanged(TableView<Student> list) {
         selectedStudents.setAll(list.getSelectionModel().getSelectedItems());
 
-        if (selectedStudents.size() > 1) {
-            for (Short id : ModuleManager.getNotSupportMultiSelections()) {
-                ModuleManager.getGuiButtons().get(id).setDisable(true);
-            }
-        } else {
-            for (Short id : ModuleManager.getNotSupportMultiSelections()) {
-                ModuleManager.getGuiButtons().get(id).setDisable(false);
-            }
+        for (Short id : ModuleManager.getNotSupportMultiSelections()) {
+            Button button = ModuleManager.getGuiButtons().get(id);
+            button.setDisable(list.getSelectionModel().getSelectedItems().size() > 1);
         }
     }
 
+    private static void setRightClickMenu(TableView<Student> list) {
+        Popup popup = new Popup();
+        Button disconnectButton = new Button("断开连接");
+
+        // Button
+        disconnectButton.setOnAction(event -> {
+            popup.hide();
+
+            Student student = list.getSelectionModel().getSelectedItem();
+            if (student == null) return;
+
+            try {
+                disconnect(student);
+            } catch (IOException e) {
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setGraphic(new FontIcon(BoxiconsRegular.ERROR));
+                alert.setTitle("错误");
+                alert.setHeaderText("断开连接失败");
+                alert.setContentText(e.getMessage());
+                alert.showAndWait();
+            }
+        });
+
+        // Popup
+        popup.setAutoHide(true);
+        popup.setOnAutoHide(event -> popup.hide());
+        popup.getContent().addAll(disconnectButton);
+
+        list.setOnMouseReleased(event -> {
+            if (event.getButton().equals(MouseButton.SECONDARY)) {
+                if (list.getSelectionModel().getSelectedItem() == null) return;
+                popup.show(list, event.getScreenX(), event.getScreenY());
+            }
+        });
+    }
+
+    private static Node getPlaceholder() {
+        HBox hBox = new HBox();
+        hBox.setAlignment(Pos.CENTER);
+        hBox.setSpacing(0);
+
+        Label label = new Label("当前没有在线的学生, ");
+        label.setAlignment(Pos.CENTER);
+        label.setGraphic(new FontIcon(BoxiconsRegular.USER_X));
+        label.setGraphicTextGap(ICON_SPACER);
+        hBox.getChildren().add(label);
+
+        Hyperlink hyperlink = new Hyperlink("点击此处进行自动扫描");
+        hyperlink.setOnAction(event -> {
+            try {
+                if (scan()) {
+                    Toolkit.getDefaultToolkit().beep();
+                } else {
+                    Alert alert = new Alert(Alert.AlertType.ERROR);
+                    alert.setGraphic(new FontIcon(BoxiconsRegular.ERROR));
+                    alert.setTitle("错误");
+                    alert.setHeaderText("自动扫描失败");
+                    alert.setContentText("请检查网络连接或手动输入IP地址");
+                    alert.showAndWait();
+                }
+            } catch (IOException e) {
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setGraphic(new FontIcon(BoxiconsRegular.ERROR));
+                alert.setTitle("错误");
+                alert.setHeaderText("自动扫描失败");
+                alert.setContentText(e.getMessage());
+                alert.showAndWait();
+            }
+        });
+        hBox.getChildren().add(hyperlink);
+
+        return hBox;
+    }
+
     public static Parent getUI() {
-        TableView<Student> table = new TableView<>(students);
-        table.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
-        table.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
-        table.setOnMouseReleased(event -> onListChanged(table));
-        table.setOnKeyReleased(event -> onListChanged(table));
-        table.setEditable(false);
+        TableView<Student> studentTable = new TableView<>(students);
+        studentTable.setPlaceholder(getPlaceholder());
+        studentTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
+        studentTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
+        studentTable.setEditable(false);
+        studentTable.getSelectionModel().getSelectedItems().addListener(
+                (ListChangeListener<Student>) change -> onListChanged(studentTable));
 
         TableColumn<Student, Integer> idColumn = new TableColumn<>("ID");
         TableColumn<Student, String> nameColumn = new TableColumn<>("主机名");
@@ -357,8 +469,10 @@ public class StudentManager {
         nameColumn.setCellValueFactory(new PropertyValueFactory<>("name"));
         ipColumn.setCellValueFactory(new PropertyValueFactory<>("ip"));
         portColumn.setCellValueFactory(new PropertyValueFactory<>("port"));
+        studentTable.getColumns().addAll(idColumn, nameColumn, ipColumn, portColumn);
 
-        table.getColumns().addAll(idColumn, nameColumn, ipColumn, portColumn);
-        return table;
+        setRightClickMenu(studentTable);
+
+        return studentTable;
     }
 }

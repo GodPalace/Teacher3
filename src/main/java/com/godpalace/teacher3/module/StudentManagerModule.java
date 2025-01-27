@@ -176,7 +176,7 @@ public class StudentManagerModule implements Module {
                         return;
                     }
 
-                    student.close();
+                    StudentManager.disconnect(student);
                     System.out.println("已断开学生端连接: " + student.getName()
                             + " (ID: " + student.getId() + ")");
                 } catch (NumberFormatException e) {

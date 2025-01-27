@@ -94,7 +94,7 @@ public class ShellModule implements Module {
 
                 if (isNeedWait && process != null) {
                     BufferedReader reader = new BufferedReader(
-                            new InputStreamReader(process.getInputStream(), "GBK"));
+                            new InputStreamReader(process.getInputStream(), "GB2312"));
 
                     String line;
                     while (process.isAlive()) {

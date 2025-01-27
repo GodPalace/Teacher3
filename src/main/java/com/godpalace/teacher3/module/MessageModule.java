@@ -48,7 +48,7 @@ public class MessageModule implements Module {
         }
 
         try {
-            byte[] bytes = args[0].trim().getBytes();
+            byte[] bytes = args[0].trim().getBytes("GB2312");
             ByteBuffer data = ByteBuffer.allocate(bytes.length);
             data.put(bytes);
             data.flip();
@@ -75,6 +75,7 @@ public class MessageModule implements Module {
 
         button.setOnAction(e -> {
             TextInputDialog dialog = new TextInputDialog();
+            dialog.getDialogPane().setGraphic(new FontIcon(BoxiconsRegular.MESSAGE_SQUARE_DETAIL));
             dialog.setGraphic(new FontIcon(BoxiconsRegular.MESSAGE_SQUARE_DETAIL));
             dialog.setTitle("发送消息");
             dialog.setHeaderText("请输入要发送的消息:");
@@ -82,26 +83,38 @@ public class MessageModule implements Module {
 
             String message = dialog.getResult();
             if (message == null || message.isEmpty()) return;
+            ByteBuffer data;
 
-            byte[] bytes = message.getBytes();
-            ByteBuffer data = ByteBuffer.allocate(bytes.length);
-            data.put(bytes);
-            data.flip();
+            try {
+                byte[] bytes = message.getBytes("GB2312");
+                data = ByteBuffer.allocate(bytes.length);
+                data.put(bytes);
+                data.flip();
+            } catch (Exception ex) {
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setGraphic(new FontIcon(BoxiconsRegular.ERROR));
+                alert.setTitle("消息发送失败");
+                alert.setHeaderText("消息编码错误: " + ex.getMessage());
+                alert.show();
 
-            int count = 0;
+                return;
+            }
+
+            int sCount = 0, fCount = 0;
             for (Student student : StudentManager.getSelectedStudents()) {
                 try {
                     sendRequest(student, data);
-                    count++;
+                    sCount++;
                 } catch (IOException ex) {
                     log.error("发送消息到学生[{}]失败", student.getName(), ex);
+                    fCount++;
                 }
             }
 
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
             alert.setGraphic(new FontIcon(BoxiconsRegular.CHECK_CIRCLE));
             alert.setTitle("消息发送成功");
-            alert.setHeaderText("共有" + count + "个学生发送成功.");
+            alert.setHeaderText("共有" + sCount + "个学生发送成功, " + fCount + "个学生发送失败.");
             alert.show();
         });
 
