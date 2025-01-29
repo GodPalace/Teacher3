@@ -3,10 +3,10 @@ package com.godpalace.teacher3.fx.menu.teacher.listener;
 import com.godpalace.teacher3.Main;
 import com.godpalace.teacher3.NetworkListener;
 import com.godpalace.teacher3.TeacherGUI;
+import com.godpalace.teacher3.fx.builder.SceneAutoConfigBuilder;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
-import javafx.scene.Scene;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.ComboBox;
@@ -21,7 +21,6 @@ import org.kordamp.ikonli.boxicons.BoxiconsRegular;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 
 @Slf4j
@@ -36,7 +35,7 @@ public class ListenerAdderMenuStage extends Stage {
         this.setResizable(false);
         this.setOnCloseRequest(e -> this.close());
 
-        this.setScene(new Scene(initializeComponents()));
+        this.setScene(new SceneAutoConfigBuilder(initializeComponents()).css().build());
         this.requestFocus();
     }
 
@@ -63,10 +62,10 @@ public class ListenerAdderMenuStage extends Stage {
         ipBox.getChildren().add(ipText);
 
         ipComboBox.setPromptText("请选择IP地址");
+        Main.getIpv4s().keySet().forEach(address -> ipComboBox.getItems().add(address.getHostAddress()));
+        Main.getIpv6s().keySet().forEach(address -> ipComboBox.getItems().add(address.getHostAddress()));
+        ipComboBox.getSelectionModel().selectFirst();
         ipBox.getChildren().add(ipComboBox);
-        for (InetAddress address : Main.getAddresses().keySet()) {
-            ipComboBox.getItems().add(address.getHostAddress());
-        }
 
         // 端口输入框
         HBox portBox = new HBox();

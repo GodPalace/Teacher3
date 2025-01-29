@@ -76,9 +76,12 @@ public class NetworkListener {
                             StudentManager.addStudent(student);
 
                             if (Main.isRunOnCmd()) {
-                                System.out.println("\n新的学生连接: " + student.getName()
+                                System.out.println("\n新的学生连接: " + student.getIp()
                                         + " (ID: " + student.getId() + ")");
                                 System.out.print("> ");
+                            } else {
+                                log.debug("New student connected: {} (ID: {})",
+                                        student.getName(), student.getId());
                             }
                         }
                     }

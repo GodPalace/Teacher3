@@ -1,8 +1,8 @@
 package com.godpalace.teacher3.module;
 
 import com.godpalace.teacher3.Student;
-import com.godpalace.teacher3.listener.StudentListener;
 import com.godpalace.teacher3.manager.StudentManager;
+import javafx.collections.ListChangeListener;
 import javafx.scene.control.Button;
 import javafx.scene.image.Image;
 import lombok.Getter;
@@ -48,15 +48,17 @@ public class FileManagerModule implements Module {
     private static final HashMap<Student, String> curDirs = new HashMap<>();
 
     static {
-        StudentManager.addListener(new StudentListener() {
-            @Override
-            public void onStudentAdded(Student student) {
-                curDirs.put(student, File.separator);
-            }
-
-            @Override
-            public void onStudentRemoved(Student student) {
-                curDirs.remove(student);
+        StudentManager.getSelectedStudents().addListener((ListChangeListener<Student>) change -> {
+            while (change.next()) {
+                if (change.wasAdded()) {
+                    for (Student student : change.getAddedSubList()) {
+                        curDirs.put(student, File.separator);
+                    }
+                } else if (change.wasRemoved()) {
+                    for (Student student : change.getRemoved()) {
+                        curDirs.remove(student);
+                    }
+                }
             }
         });
     }
@@ -707,7 +709,8 @@ public class FileManagerModule implements Module {
                 switch (response.getShort()) {
                     case SUCCESS -> System.out.println("解锁成功");
                     case ERROR_NOT_FOUND_FILE -> System.out.println("文件不存在");
-                    case ERROR_LOCK_FILE -> System.out.println("解锁失败, 可能是文件未被锁定");
+                    case ERROR_LOCK_FILE -> System.out.println("解锁失败");
+                    case ERROR_INVALID_FILE -> System.out.println("文件未被锁定");
                 }
             }
 

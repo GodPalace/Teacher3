@@ -16,6 +16,7 @@
         <!-- 过滤掉spring和mybatis的一些无用的DEBUG信息-->
         <logger name="io.netty" level="error"/>
         <logger name="com.backblaze" level="error"/>
+        <logger name="org.pomo.toasterfx" level="error"/>
 
         <!-- 建立一个默认的root的logger -->
         <root level="trace">

@@ -11,6 +11,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.channels.SocketChannel;
 import java.nio.file.StandardOpenOption;
+import java.util.HashMap;
 import java.util.zip.GZIPOutputStream;
 
 @Slf4j
@@ -37,8 +38,10 @@ public class FileManagerModule implements Module {
     private static final short ERROR_RENAME_FILE    = ERROR_DELETE_FILE + 1;
     private static final short ERROR_LOCK_FILE      = ERROR_RENAME_FILE + 1;
 
-    private static native boolean LockFile(String path);
-    private static native boolean UnlockFile(String path);
+    private static native long LockFile(String path);
+    private static native boolean UnlockFile(long ptr);
+
+    private static final HashMap<String, Long> ptrs = new HashMap<>();
 
     @Override
     public short getID() {
@@ -299,9 +302,14 @@ public class FileManagerModule implements Module {
                 String path = new String(pathBytes);
 
                 if (new File(path).exists()) {
-                    if (!LockFile(path)) {
+                    long ptr = LockFile(path);
+
+                    if (ptr == 0) {
                         response = ERROR_LOCK_FILE;
                         log.info("Failed to lock file: {}", path);
+                    } else {
+                        ptrs.put(path, ptr);
+                        log.info("File locked: {}", path);
                     }
                 } else {
                     response = ERROR_NOT_FOUND_FILE;
@@ -315,14 +323,22 @@ public class FileManagerModule implements Module {
                 data.get(pathBytes);
                 String path = new String(pathBytes);
 
-                if (new File(path).exists()) {
-                    if (!UnlockFile(path)) {
-                        response = ERROR_LOCK_FILE;
-                        log.info("Failed to unlock file: {}", path);
+                if (ptrs.containsKey(path)) {
+                    if (new File(path).exists()) {
+                        if (!UnlockFile(ptrs.get(path))) {
+                            response = ERROR_LOCK_FILE;
+                            log.info("Failed to unlock file: {}", path);
+                        } else {
+                            ptrs.remove(path);
+                            log.info("File unlocked: {}", path);
+                        }
+                    } else {
+                        response = ERROR_NOT_FOUND_FILE;
+                        log.info("Not found file: {}", path);
                     }
                 } else {
-                    response = ERROR_NOT_FOUND_FILE;
-                    log.info("Not found file: {}", path);
+                    response = ERROR_INVALID_FILE;
+                    log.info("File not locked: {}", path);
                 }
             }
 

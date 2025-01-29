@@ -6,21 +6,25 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.awt.*;
-import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.net.NetworkInterface;
+import java.net.*;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Locale;
 
 @Slf4j
 public class Main {
+    public static final String IPV4_MULTICAST_GROUP = "224.3.7.1";
+    public static final String IPV6_MULTICAST_GROUP = "ff02::307:1";
+
     public static final int
             MAIN_PORT = 37000,
             SCAN_PORT = 37001;
 
     @Getter
-    private static final HashMap<InetAddress, NetworkInterface> addresses = new HashMap<>();
+    private static final HashMap<InetAddress, NetworkInterface> ipv4s = new HashMap<>();
+
+    @Getter
+    private static final HashMap<InetAddress, NetworkInterface> ipv6s = new HashMap<>();
 
     @Getter
     private static boolean isRunOnCmd;
@@ -35,18 +39,24 @@ public class Main {
             NetworkInterface networkInterface = interfaces.nextElement();
             Enumeration<InetAddress> addresses = networkInterface.getInetAddresses();
 
-            while (addresses.hasMoreElements()) {
-                InetAddress address = addresses.nextElement();
+            if (networkInterface.isUp() && !networkInterface.isLoopback() && networkInterface.supportsMulticast()) {
+                while (addresses.hasMoreElements()) {
+                    InetAddress address = addresses.nextElement();
 
-                if (!address.isLoopbackAddress() && address.isSiteLocalAddress()) {
-                    Main.addresses.put(address, networkInterface);
+                    if (!address.isLoopbackAddress()) {
+                        if (address instanceof Inet4Address && networkInterface.supportsMulticast()) {
+                            Main.ipv4s.put(address, networkInterface);
+                        } else if (address instanceof Inet6Address) {
+                            Main.ipv6s.put(address, networkInterface);
+                        }
 
-                    // Register a network listener for the address
-                    NetworkListener listener = new NetworkListener(
-                            new InetSocketAddress(address, SCAN_PORT), false);
-                    NetworkListener.getScanListeners().add(listener);
+                        // Register a network listener for the ipv4 address
+                        NetworkListener listener = new NetworkListener(
+                                new InetSocketAddress(address, SCAN_PORT), false);
+                        NetworkListener.getScanListeners().add(listener);
 
-                    log.debug("Added address: {}", address.getHostAddress());
+                        log.debug("Added address: {}", address.getHostAddress());
+                    }
                 }
             }
         }

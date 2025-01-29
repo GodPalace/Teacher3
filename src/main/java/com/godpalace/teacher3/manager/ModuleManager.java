@@ -8,7 +8,6 @@ import javafx.scene.layout.FlowPane;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
-import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -19,9 +18,6 @@ public class ModuleManager {
 
     @Getter
     private static final ConcurrentHashMap<Short, Module> idMap = new ConcurrentHashMap<>();
-
-    @Getter
-    private static final ArrayList<Short> notSupportMultiSelections = new ArrayList<>();
 
     @Getter
     private static final ConcurrentHashMap<Short, Button> guiButtons = new ConcurrentHashMap<>();
@@ -45,7 +41,6 @@ public class ModuleManager {
 
                 modules.put(module.getCommand(), module);
                 idMap.put(module.getID(), module);
-                if (!module.isSupportMultiSelection()) notSupportMultiSelections.add(module.getID());
 
                 log.debug("Loading module: {}", className);
             }
@@ -60,6 +55,7 @@ public class ModuleManager {
             Button button = module.getGuiButton();
             if (button == null) continue;
 
+            button.setDisable(true);
             guiButtons.put(module.getID(), button);
         }
     }

@@ -19,8 +19,13 @@ BOOL WINAPI DllMain(HINSTANCE hinstDLL, DWORD code, LPVOID lpvReserved) {
 	if (code == DLL_PROCESS_ATTACH) {
 		hInstance = hinstDLL;
 
-		hProtectModule  = LoadLibraryA(string(getenv("TEMP")).append("\\Student3HookDll.dll").c_str());
-		hUsbModule      = LoadLibraryA(string(getenv("TEMP")).append("\\Student3UsbDll.dll").c_str());
+		char* dllPath = new char[MAX_PATH];
+		GetModuleFileNameA(hInstance, dllPath, MAX_PATH);
+		string str = dllPath;
+		SetDllDirectoryA(str.substr(0, str.find_last_of("\\")).c_str());
+
+		hProtectModule  = LoadLibraryA("Student3HookDll.dll");
+		hUsbModule      = LoadLibraryA("Student3UsbDll.dll");
 	}
 	else if (code == DLL_PROCESS_DETACH) {
 		if (hProtectModule != NULL) FreeLibrary(hProtectModule);
@@ -125,7 +130,7 @@ JNIEXPORT jint JNICALL Java_com_godpalace_student_module_UsbModule_Enable(JNIEnv
 }
 
 // FileManagerModule
-JNIEXPORT jboolean JNICALL Java_com_godpalace_student_module_FileManagerModule_LockFile(
+JNIEXPORT jlong JNICALL Java_com_godpalace_student_module_FileManagerModule_LockFile(
 		JNIEnv* env, jobject obj, jstring path) {
 
 	HANDLE hFile = CreateFileA(jstringToChar(env, path), GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
@@ -134,14 +139,18 @@ JNIEXPORT jboolean JNICALL Java_com_godpalace_student_module_FileManagerModule_L
 	DWORD sizeL = GetFileSize(hFile, &sizeH);
 
 	BOOL status = LockFile(hFile, 0, 0, sizeL, sizeH);
-	CloseHandle(hFile);
-	return status;
+	if (status) {
+		return HandleToLong(hFile);
+	}
+	else {
+		return 0;
+	}
 }
 
 JNIEXPORT jboolean JNICALL Java_com_godpalace_student_module_FileManagerModule_UnlockFile(
-		JNIEnv* env, jobject obj, jstring path) {
+		JNIEnv* env, jobject obj, jlong ptr) {
 
-	HANDLE hFile = CreateFileA(jstringToChar(env, path), GENERIC_READ | GENERIC_WRITE, 0, NULL, OPEN_EXISTING, FILE_ATTRIBUTE_NORMAL, NULL);
+	HANDLE hFile = LongToHandle(ptr);
 
 	DWORD sizeH = 0;
 	DWORD sizeL = GetFileSize(hFile, &sizeH);

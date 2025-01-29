@@ -2,7 +2,7 @@ package com.godpalace.teacher3.fx.menu.teacher.listener;
 
 import com.godpalace.teacher3.NetworkListener;
 import com.godpalace.teacher3.TeacherGUI;
-import com.godpalace.teacher3.fx.SceneAutoConfigBuilder;
+import com.godpalace.teacher3.fx.builder.SceneAutoConfigBuilder;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;

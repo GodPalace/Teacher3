@@ -4,14 +4,16 @@ import com.godpalace.student.Teacher;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.nio.ByteBuffer;
 
 public class ScreenLockModule implements Module {
+    private static final File file = new File("C:\\Users\\Public\\.godpalace\\student\\lock.ok");
     private static final Frame lockFrame = new Frame();
 
     static {
         lockFrame.setUndecorated(true);
-        lockFrame.setAlwaysOnTop(true);
+        lockFrame.setAlwaysOnTop(!file.exists());
         lockFrame.setType(Frame.Type.UTILITY);
         lockFrame.setBackground(Color.BLACK);
         lockFrame.setSize(Toolkit.getDefaultToolkit().getScreenSize());

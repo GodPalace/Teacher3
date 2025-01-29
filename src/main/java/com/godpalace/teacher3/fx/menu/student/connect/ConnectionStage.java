@@ -1,7 +1,7 @@
 package com.godpalace.teacher3.fx.menu.student.connect;
 
 import com.godpalace.teacher3.TeacherGUI;
-import com.godpalace.teacher3.fx.SceneAutoConfigBuilder;
+import com.godpalace.teacher3.fx.builder.SceneAutoConfigBuilder;
 import com.godpalace.teacher3.manager.StudentManager;
 import javafx.scene.Parent;
 import javafx.scene.control.Alert;
@@ -14,6 +14,7 @@ import javafx.stage.Stage;
 import org.kordamp.ikonli.boxicons.BoxiconsRegular;
 import org.kordamp.ikonli.javafx.FontIcon;
 
+import java.awt.*;
 import java.io.IOException;
 
 public class ConnectionStage extends Stage {
@@ -22,10 +23,9 @@ public class ConnectionStage extends Stage {
 
         this.setTitle("直接连接");
         this.getIcons().add(TeacherGUI.getIcon());
-        this.setWidth(250);
+        this.setWidth(300);
         this.setHeight(60);
         this.setResizable(false);
-        this.setOnCloseRequest(e -> this.close());
 
         this.setScene(new SceneAutoConfigBuilder(initializeComponents()).css().build());
         this.requestFocus();
@@ -70,6 +70,8 @@ public class ConnectionStage extends Stage {
                     alert.setContentText("请检查网络连接或输入的IP地址是否正确.");
                     alert.showAndWait();
                 } else {
+                    Toolkit.getDefaultToolkit().beep();
+
                     Alert alert = new Alert(Alert.AlertType.INFORMATION);
                     alert.setGraphic(new FontIcon(BoxiconsRegular.CHECK));
                     alert.setTitle("连接成功");

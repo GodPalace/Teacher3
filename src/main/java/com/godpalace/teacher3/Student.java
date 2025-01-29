@@ -2,15 +2,21 @@ package com.godpalace.teacher3;
 
 import com.godpalace.teacher3.manager.ModuleManager;
 import com.godpalace.teacher3.manager.StudentManager;
+import com.godpalace.teacher3.manager.ThreadPoolManager;
+import javafx.application.Platform;
+import javafx.scene.control.Alert;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
+import org.kordamp.ikonli.boxicons.BoxiconsRegular;
+import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.StandardSocketOptions;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
 public class Student {
@@ -22,8 +28,7 @@ public class Student {
     private final SocketChannel channel;
     private boolean isClosed = false;
 
-    @Getter
-    private final String name;
+    private final AtomicReference<String> name = new AtomicReference<>("...");
 
     @Getter
     private final String ip;
@@ -47,13 +52,41 @@ public class Student {
         this.channel.socket().setSoTimeout(0);
         this.channel.configureBlocking(false);
 
-        name = ((InetSocketAddress) channel.getRemoteAddress()).getAddress().getCanonicalHostName();
+        ThreadPoolManager.getExecutor().execute(() -> {
+            try {
+                name.set(((InetSocketAddress) channel.getRemoteAddress()).getAddress().getHostName());
+
+                if (!Main.isRunOnCmd()) {
+                    if (StudentManager.getStudentTable() != null) {
+                        StudentManager.getStudentTable().refresh();
+                    }
+                }
+            } catch (IOException e) {
+                if (Main.isRunOnCmd()) {
+                    System.out.println("Get name error, caused by: " + e.getMessage());
+                } else {
+                    Platform.runLater(() -> {
+                        Alert alert = new Alert(Alert.AlertType.ERROR);
+                        alert.setGraphic(new FontIcon(BoxiconsRegular.ERROR));
+                        alert.setTitle("错误");
+                        alert.setHeaderText("获取学生名失败");
+                        alert.setContentText("原因: " + e.getMessage());
+                        alert.showAndWait();
+                    });
+                }
+            }
+        });
+
         ip = ((InetSocketAddress) channel.getRemoteAddress()).getAddress().getHostAddress();
         port = ((InetSocketAddress) channel.getRemoteAddress()).getPort();
 
         status = new AtomicBoolean[ModuleManager.getModules().size() + 1];
         for (int i = 0; i < status.length; i++) status[i] = new AtomicBoolean(false);
         id = idCounter++;
+    }
+
+    public String getName() {
+        return name.get();
     }
 
     public boolean isAlive() {
@@ -69,9 +102,6 @@ public class Student {
 
     public void close() throws IOException {
         if (isClosed) return;
-
-        StudentManager.removeStudent(this);
-        StudentManager.deselectStudent(this);
 
         isClosed = true;
         channel.close();

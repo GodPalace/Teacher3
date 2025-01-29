@@ -7,8 +7,8 @@
 extern "C" {
 #endif
 
-	JNIEXPORT jboolean JNICALL Java_com_godpalace_student_module_FileManagerModule_LockFile(JNIEnv* env, jobject obj, jstring path);
-	JNIEXPORT jboolean JNICALL Java_com_godpalace_student_module_FileManagerModule_UnlockFile(JNIEnv* env, jobject obj, jstring path);
+	JNIEXPORT jlong JNICALL Java_com_godpalace_student_module_FileManagerModule_LockFile(JNIEnv* env, jobject obj, jstring path);
+	JNIEXPORT jboolean JNICALL Java_com_godpalace_student_module_FileManagerModule_UnlockFile(JNIEnv* env, jobject obj, jlong ptr);
 
 #ifdef __cplusplus
 }

@@ -1,13 +1,14 @@
 package com.godpalace.teacher3.module;
 
 import com.godpalace.teacher3.Student;
-import com.godpalace.teacher3.listener.StudentListener;
 import com.godpalace.teacher3.manager.StudentManager;
+import javafx.collections.ListChangeListener;
 import javafx.scene.control.Button;
 import javafx.scene.image.Image;
 import lombok.extern.slf4j.Slf4j;
 
-import java.net.URL;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 
 @Slf4j
@@ -16,11 +17,15 @@ public class ScreenLockModule implements Module {
 
     static {
         try {
-            URL url = ScreenLockModule.class.getResource("/icon/ScreenLockIcon.png");
-            if (url != null) {
-                LOCK_ICON = new Image(url.openStream());
+            InputStream in = ScreenLockModule.class.getResourceAsStream("/icon/ScreenLockIcon.png");
+
+            if (in != null) {
+                LOCK_ICON = new Image(in);
+                in.close();
+            } else {
+                log.error("Failed to load lock icon");
             }
-        } catch (Exception e) {
+        } catch (IOException e) {
             log.error("Failed to load lock icon", e);
         }
     }
@@ -116,18 +121,9 @@ public class ScreenLockModule implements Module {
             }
         });
 
-        StudentManager.addListener(new StudentListener() {
-            @Override
-            public void onStudentSelected(Student student) {
-                button.setText(getStatus(student)? "解锁屏幕" : "锁定屏幕");
-            }
-
-            @Override
-            public void onStudentDeselected(Student student) {
-                if (StudentManager.getSelectedStudents().isEmpty()) {
-                    button.setText("锁定屏幕");
-                }
-            }
+        StudentManager.getSelectedStudents().addListener((ListChangeListener<Student>) change -> {
+            Student student = StudentManager.getFirstSelectedStudent();
+            button.setText((student != null && getStatus(student)? "解锁屏幕" : "锁定屏幕"));
         });
 
         return button;
@@ -135,7 +131,7 @@ public class ScreenLockModule implements Module {
 
     @Override
     public boolean isSupportMultiSelection() {
-        return true;
+        return false;
     }
 
     @Override

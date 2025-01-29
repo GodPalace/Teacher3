@@ -2,15 +2,14 @@ package com.godpalace.teacher3.manager;
 
 import com.godpalace.teacher3.Main;
 import com.godpalace.teacher3.Student;
-import com.godpalace.teacher3.listener.StudentListener;
+import com.godpalace.teacher3.fx.message.Notification;
+import com.godpalace.teacher3.module.Module;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
 import javafx.geometry.Pos;
 import javafx.scene.Node;
 import javafx.scene.Parent;
-import javafx.scene.control.Button;
-import javafx.scene.control.Label;
 import javafx.scene.control.*;
 import javafx.scene.control.cell.PropertyValueFactory;
 import javafx.scene.input.MouseButton;
@@ -20,15 +19,14 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.kordamp.ikonli.boxicons.BoxiconsRegular;
 import org.kordamp.ikonli.javafx.FontIcon;
+import org.pomo.toasterfx.model.impl.ToastTypes;
 
-import java.awt.*;
 import java.io.*;
 import java.net.*;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
-import java.util.LinkedList;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -43,8 +41,6 @@ public class StudentManager {
     private static final ObservableList<Student> selectedStudents =
             FXCollections.synchronizedObservableList(FXCollections.observableArrayList());
 
-    private static final LinkedList<StudentListener> listeners = new LinkedList<>();
-
     static {
         ThreadPoolManager.getExecutor().execute(new Runnable() {
             @Override
@@ -58,6 +54,7 @@ public class StudentManager {
                             if (student.isAlive()) continue;
                             iterator.remove();
                             StudentManager.deselectStudent(student);
+
                             student.close();
                         }
 
@@ -71,14 +68,16 @@ public class StudentManager {
                 }
             }
         });
-    }
 
-    public static void addListener(StudentListener listener) {
-        listeners.add(listener);
-    }
-
-    public static void removeListener(StudentListener listener) {
-        listeners.remove(listener);
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            for (Student student : students) {
+                try {
+                    disconnect(student);
+                } catch (IOException e) {
+                    log.error("Error in StudentManager.shutdownHook, cause: {}", e.getMessage());
+                }
+            }
+        }));
     }
 
     public static Student getFirstStudent() {
@@ -93,10 +92,6 @@ public class StudentManager {
 
     public static void addStudent(Student student) {
         students.add(student);
-
-        for (StudentListener listener : listeners) {
-            listener.onStudentAdded(student);
-        }
     }
 
     public static boolean removeStudent(int id) {
@@ -104,10 +99,6 @@ public class StudentManager {
             if (student.getId() == id) {
                 students.remove(student);
                 deselectStudent(student);
-
-                for (StudentListener listener : listeners) {
-                    listener.onStudentRemoved(student);
-                }
 
                 return true;
             }
@@ -122,20 +113,12 @@ public class StudentManager {
 
         students.remove(student);
         deselectStudent(student);
-
-        for (StudentListener listener : listeners) {
-            listener.onStudentRemoved(student);
-        }
     }
 
     public static boolean selectStudent(int id) {
         for (Student student : students) {
             if (student.getId() == id) {
                 selectedStudents.add(student);
-
-                for (StudentListener listener : listeners) {
-                    listener.onStudentSelected(student);
-                }
 
                 return true;
             }
@@ -149,19 +132,12 @@ public class StudentManager {
             return;
 
         selectedStudents.add(student);
-        for (StudentListener listener : listeners) {
-            listener.onStudentSelected(student);
-        }
     }
 
     public static boolean deselectStudent(int id) {
         for (Student student : selectedStudents) {
             if (student.getId() == id) {
                 selectedStudents.remove(student);
-
-                for (StudentListener listener : listeners) {
-                    listener.onStudentDeselected(student);
-                }
 
                 return true;
             }
@@ -174,31 +150,15 @@ public class StudentManager {
         if (!selectedStudents.contains(student))
             return;
 
-        for (StudentListener listener : listeners) {
-            listener.onStudentDeselected(student);
-        }
-
         selectedStudents.remove(student);
     }
 
     public static void selectAllStudents() {
         clearSelectedStudents();
         selectedStudents.addAll(students);
-
-        for (StudentListener listener : listeners) {
-            for (Student student : students) {
-                listener.onStudentSelected(student);
-            }
-        }
     }
 
     public static void clearSelectedStudents() {
-        for (StudentListener listener : listeners) {
-            for (Student student : selectedStudents) {
-                listener.onStudentDeselected(student);
-            }
-        }
-
         selectedStudents.clear();
     }
 
@@ -257,9 +217,8 @@ public class StudentManager {
     }
 
     public static boolean scan() throws IOException {
-        for (NetworkInterface anInterface : Main.getAddresses().values()) {
-            InetSocketAddress group = new InetSocketAddress(
-                    InetAddress.getByName("224.3.7.1"), Main.SCAN_PORT);
+        for (NetworkInterface anInterface : Main.getIpv4s().values()) {
+            InetSocketAddress group = new InetSocketAddress(Main.IPV4_MULTICAST_GROUP, Main.SCAN_PORT);
 
             try (MulticastSocket socket = new MulticastSocket()) {
                 socket.joinGroup(group, anInterface);
@@ -270,7 +229,24 @@ public class StudentManager {
                 DatagramPacket packet = new DatagramPacket(data, data.length, group);
                 socket.send(packet);
             } catch (IOException e) {
-                log.error("Error in StudentManager.scan, cause: {}", e.getMessage());
+                log.error("Error in scan ipv4, cause: {}", e.getMessage());
+                return false;
+            }
+        }
+
+        for (NetworkInterface anInterface : Main.getIpv6s().values()) {
+            InetSocketAddress group = new InetSocketAddress(Main.IPV6_MULTICAST_GROUP, Main.SCAN_PORT);
+
+            try (MulticastSocket socket = new MulticastSocket()) {
+                socket.joinGroup(group, anInterface);
+
+                byte[] data = new byte[1];
+                data[0] = (byte) 1;
+
+                DatagramPacket packet = new DatagramPacket(data, data.length, group);
+                socket.send(packet);
+            } catch (IOException e) {
+                log.error("Error in scan ipv6, cause: {}", e.getMessage());
                 return false;
             }
         }
@@ -279,22 +255,25 @@ public class StudentManager {
     }
 
     public static void build() throws IOException {
-        build(null, 0);
+        build(new File(System.currentTimeMillis() + "-Student.jar"));
     }
 
-    public static void build(String ip, int port) throws IOException {
-        File tempFile = new File(System.getenv("TEMP") + "\\Student.jar");
-        File file = new File(System.currentTimeMillis() + "-Student.jar");
+    public static void build(InetSocketAddress address) throws IOException {
+        build(address, new File(System.currentTimeMillis() + "-Student.jar"));
+    }
 
-        URL url = Main.class.getResource("/Student.jar");
-        if (url == null) {
-            System.out.println("未找到资源文件, 无法构建学生端程序");
-            return;
-        }
+    public static void build(File file) throws IOException {
+        build(null, file);
+    }
+
+    public static void build(InetSocketAddress address, File file) throws IOException {
+        File tempFile = new File(System.getenv("TEMP") + "\\Student.jar");
 
         // 输出到临时文件
-        InputStream in = url.openStream();
+        InputStream in = StudentManager.class.getResourceAsStream("/Student.jar");
+        if (in == null) throw new IOException("Student.jar not found");
         FileOutputStream out = new FileOutputStream(tempFile);
+
         byte[] buffer = new byte[10240];
         int len;
         while ((len = in.read(buffer)) != -1) {
@@ -320,8 +299,9 @@ public class StudentManager {
         }
 
         // 写入反向连接配置
-        if (ip != null && port != 0) {
-            byte[] ipBytes = ip.getBytes(StandardCharsets.UTF_8);
+        if (address != null) {
+            byte[] ipBytes = address.getAddress().getHostAddress().getBytes(StandardCharsets.UTF_8);
+            int port = address.getPort();
             int ipLength = ipBytes.length;
 
             try {
@@ -342,7 +322,7 @@ public class StudentManager {
                 zipOut.write(configData);
                 zipOut.closeEntry();
             } catch (NumberFormatException e) {
-                System.out.println("命令格式错误, 请使用格式: student build [ip] [port]");
+                if (Main.isRunOnCmd()) System.out.println("命令格式错误, 请使用格式: student build [ip] [port]");
                 return;
             }
         }
@@ -358,16 +338,33 @@ public class StudentManager {
     private static final int ICON_SIZE   = 16;
     private static final int ICON_SPACER = 10;
 
-    private static void onListChanged(TableView<Student> list) {
-        selectedStudents.setAll(list.getSelectionModel().getSelectedItems());
+    @Getter
+    private static TableView<Student> studentTable;
 
-        for (Short id : ModuleManager.getNotSupportMultiSelections()) {
-            Button button = ModuleManager.getGuiButtons().get(id);
-            button.setDisable(list.getSelectionModel().getSelectedItems().size() > 1);
+    private static void onListChanged() {
+        ObservableList<Student> items = studentTable.getSelectionModel().getSelectedItems();
+
+        if (!items.isEmpty()) {
+            for (Module module : ModuleManager.getModules().values()) {
+                Button button = ModuleManager.getGuiButtons().get(module.getID());
+                if (button == null) continue;
+
+                if (module.isSupportMultiSelection()) {
+                    button.setDisable(false);
+                } else {
+                    button.setDisable(items.size() > 1);
+                }
+            }
+        } else {
+            for (Button button : ModuleManager.getGuiButtons().values()) {
+                button.setDisable(true);
+            }
         }
+
+        selectedStudents.setAll(items);
     }
 
-    private static void setRightClickMenu(TableView<Student> list) {
+    private static void setRightClickMenu() {
         Popup popup = new Popup();
         Button disconnectButton = new Button("断开连接");
 
@@ -375,7 +372,7 @@ public class StudentManager {
         disconnectButton.setOnAction(event -> {
             popup.hide();
 
-            Student student = list.getSelectionModel().getSelectedItem();
+            Student student = studentTable.getSelectionModel().getSelectedItem();
             if (student == null) return;
 
             try {
@@ -395,10 +392,10 @@ public class StudentManager {
         popup.setOnAutoHide(event -> popup.hide());
         popup.getContent().addAll(disconnectButton);
 
-        list.setOnMouseReleased(event -> {
+        studentTable.setOnMouseReleased(event -> {
             if (event.getButton().equals(MouseButton.SECONDARY)) {
-                if (list.getSelectionModel().getSelectedItem() == null) return;
-                popup.show(list, event.getScreenX(), event.getScreenY());
+                if (studentTable.getSelectionModel().getSelectedItem() == null) return;
+                popup.show(studentTable, event.getScreenX(), event.getScreenY());
             }
         });
     }
@@ -418,7 +415,8 @@ public class StudentManager {
         hyperlink.setOnAction(event -> {
             try {
                 if (scan()) {
-                    Toolkit.getDefaultToolkit().beep();
+                    Notification.showNotification(
+                            "扫描完成", "扫描已经完成了", ToastTypes.SUCCESS);
                 } else {
                     Alert alert = new Alert(Alert.AlertType.ERROR);
                     alert.setGraphic(new FontIcon(BoxiconsRegular.ERROR));
@@ -442,13 +440,15 @@ public class StudentManager {
     }
 
     public static Parent getUI() {
-        TableView<Student> studentTable = new TableView<>(students);
+        studentTable = new TableView<>(students);
         studentTable.setPlaceholder(getPlaceholder());
         studentTable.setColumnResizePolicy(TableView.CONSTRAINED_RESIZE_POLICY);
         studentTable.getSelectionModel().setSelectionMode(SelectionMode.MULTIPLE);
         studentTable.setEditable(false);
+
         studentTable.getSelectionModel().getSelectedItems().addListener(
-                (ListChangeListener<Student>) change -> onListChanged(studentTable));
+                (ListChangeListener<Student>) change -> onListChanged());
+        students.addListener((ListChangeListener<Student>) change -> studentTable.refresh());
 
         TableColumn<Student, Integer> idColumn = new TableColumn<>("ID");
         TableColumn<Student, String> nameColumn = new TableColumn<>("主机名");
@@ -471,7 +471,7 @@ public class StudentManager {
         portColumn.setCellValueFactory(new PropertyValueFactory<>("port"));
         studentTable.getColumns().addAll(idColumn, nameColumn, ipColumn, portColumn);
 
-        setRightClickMenu(studentTable);
+        setRightClickMenu();
 
         return studentTable;
     }

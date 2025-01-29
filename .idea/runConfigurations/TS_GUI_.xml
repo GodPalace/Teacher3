@@ -1,0 +1,7 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="TS(GUI)" type="CompoundRunConfigurationType">
+    <toRun name="Gui Run" type="Application" />
+    <toRun name="Studnet Main" type="Application" />
+    <method v="2" />
+  </configuration>
+</component>

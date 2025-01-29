@@ -5,6 +5,8 @@ import lombok.extern.slf4j.Slf4j;
 import java.io.File;
 import java.net.URL;
 import java.net.URLClassLoader;
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
@@ -44,9 +46,9 @@ public final class PackageUtil {
         if (url != null) {
             String type = url.getProtocol();
             if (type.equals("file")) {
-                fileNames = getClassNameByFile(url.getPath(), null, childPackage);
+                fileNames = getClassNameByFile(URLDecoder.decode(url.getPath(), StandardCharsets.UTF_8), null, childPackage);
             } else if (type.equals("jar")) {
-                fileNames = getClassNameByJar(url.getPath(), childPackage);
+                fileNames = getClassNameByJar(URLDecoder.decode(url.getPath(), StandardCharsets.UTF_8), childPackage);
             }
         } else {
             fileNames = getClassNameByJars(((URLClassLoader) loader).getURLs(), packagePath, childPackage);

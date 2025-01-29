@@ -1,8 +1,9 @@
 package com.godpalace.teacher3;
 
 import com.github.kwhat.jnativehook.GlobalScreen;
-import com.godpalace.teacher3.fx.SceneAutoConfigBuilder;
+import com.godpalace.teacher3.fx.builder.SceneAutoConfigBuilder;
 import com.godpalace.teacher3.fx.menu.FXMenu;
+import com.godpalace.teacher3.manager.CssManager;
 import com.godpalace.teacher3.manager.MenuManager;
 import com.godpalace.teacher3.manager.ModuleManager;
 import com.godpalace.teacher3.manager.StudentManager;
@@ -18,10 +19,14 @@ import javafx.stage.Stage;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
+import java.io.IOException;
 import java.io.InputStream;
 
 @Slf4j
 public class TeacherGUI extends Application {
+    @Getter
+    private static Stage gui;
+
     @Getter
     private static Image icon;
 
@@ -40,22 +45,23 @@ public class TeacherGUI extends Application {
         }
     }
 
-    private void initializeIcon() {
-        InputStream stream = TeacherGUI.class.getResourceAsStream("/icon.png");
+    private void initializeIcon() throws IOException {
+        InputStream stream = TeacherGUI.class.getResourceAsStream("/Icon.png");
         if (stream == null) {
-            log.error("Icon not found");
+            log.error("Icon.png not found");
             return;
         }
 
         icon = new Image(stream);
+        stream.close();
     }
 
     @Override
-    public void init() {
+    public void init() throws Exception {
         initializeHook();
         initializeIcon();
 
-        SceneAutoConfigBuilder.initializeCss();
+        CssManager.initializeCss();
         MenuManager.initialize();
         ModuleManager.initializeButtons();
     }
@@ -105,14 +111,18 @@ public class TeacherGUI extends Application {
         Parent rootPane = getRootPane();
         stage.setScene(new SceneAutoConfigBuilder(rootPane).css().build());
 
-        stage.show();
+        gui = stage;
+        gui.show();
     }
 
     @Override
     public void stop() {
         log.info("Stopping the application");
+        exit(0);
+    }
 
+    public static void exit(int status) {
         Platform.exit();
-        System.exit(0);
+        System.exit(status);
     }
 }

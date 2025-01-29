@@ -117,7 +117,7 @@ public class DisplayModule implements Module {
 
     @Override
     public boolean isSupportMultiSelection() {
-        return true;
+        return false;
     }
 
     @Override

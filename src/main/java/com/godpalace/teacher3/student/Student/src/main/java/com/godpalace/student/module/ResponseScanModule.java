@@ -27,8 +27,11 @@ public class ResponseScanModule implements Module {
     public void execute(Teacher teacher, ByteBuffer data) {
         for (Map.Entry<InetAddress, NetworkInterface> entry : Main.getAddresses().entrySet()) {
             ThreadPoolManager.getExecutor().execute(() -> {
-                InetSocketAddress address = new InetSocketAddress(entry.getKey(), Main.SCAN_PORT);
-                InetSocketAddress group = new InetSocketAddress("224.3.7.1", Main.SCAN_PORT);
+                InetAddress ipKey = entry.getKey();
+                InetSocketAddress address = new InetSocketAddress(ipKey, Main.SCAN_PORT);
+                InetSocketAddress group = new InetSocketAddress(
+                        (ipKey instanceof Inet4Address? Main.IPV4_MULTICAST_GROUP : Main.IPV6_MULTICAST_GROUP),
+                        Main.SCAN_PORT);
 
                 try (MulticastSocket socket = new MulticastSocket(address)) {
                     socket.joinGroup(group, entry.getValue());
@@ -74,12 +77,12 @@ public class ResponseScanModule implements Module {
                             } catch (Exception ignored) {
                             }
                         } catch (Exception e) {
-                            log.error("Error while creating packet for {}", entry.getKey(), e);
+                            log.error("Error while creating packet for {}", ipKey, e);
                             break;
                         }
                     }
                 } catch (Exception e) {
-                    log.error("Error while scanning response from {}", entry.getKey(), e);
+                    log.error("Error while scanning response from {}", ipKey, e);
                 }
             });
         }

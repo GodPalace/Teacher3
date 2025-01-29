@@ -8,6 +8,7 @@ import javafx.scene.image.Image;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 
 /*
  * 数据文件格式:
@@ -128,7 +129,7 @@ public class StudentManagerModule implements Module {
                 }
 
                 System.out.println("正在构建学生端程序...");
-                StudentManager.build(listenerIp, listenerPort);
+                StudentManager.build(new InetSocketAddress(listenerIp, listenerPort));
                 System.out.println("构建成功!");
             }
 

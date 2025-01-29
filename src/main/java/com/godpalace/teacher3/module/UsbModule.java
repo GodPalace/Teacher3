@@ -91,7 +91,7 @@ public class UsbModule implements Module {
 
     @Override
     public boolean isSupportMultiSelection() {
-        return true;
+        return false;
     }
 
     @Override
