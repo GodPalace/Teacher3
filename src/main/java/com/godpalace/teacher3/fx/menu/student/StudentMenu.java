@@ -19,7 +19,7 @@ public class StudentMenu extends FXMenu {
         addMenuItem("自动扫描", event -> {
             try {
                 if (StudentManager.scan()) {
-                    Notification.showNotification(
+                    Notification.show(
                             "扫描完成", "扫描已经完成了", ToastTypes.SUCCESS);
                 } else {
                     Alert alert = new Alert(Alert.AlertType.ERROR);

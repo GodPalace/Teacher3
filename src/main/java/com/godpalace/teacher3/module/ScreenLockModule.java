@@ -2,6 +2,8 @@ package com.godpalace.teacher3.module;
 
 import com.godpalace.teacher3.Student;
 import com.godpalace.teacher3.manager.StudentManager;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import javafx.collections.ListChangeListener;
 import javafx.scene.control.Button;
 import javafx.scene.image.Image;
@@ -9,7 +11,6 @@ import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.ByteBuffer;
 
 @Slf4j
 public class ScreenLockModule implements Module {
@@ -66,13 +67,14 @@ public class ScreenLockModule implements Module {
             case "lock":
             case "on":
                 try {
-                    for (Student student : StudentManager.getSelectedStudents()) {
-                        ByteBuffer data = ByteBuffer.allocate(2);
-                        data.putShort((short) 1);
-                        data.flip();
+                    ByteBuf request = Unpooled.buffer(2);
+                    request.writeShort((short) 1);
 
-                        sendRequest(student, data);
+                    for (Student student : StudentManager.getSelectedStudents()) {
+                        student.sendRequest(getID(), request);
                     }
+
+                    request.release();
                 } catch (Exception e) {
                     log.error("Failed to lock screen", e);
                 }
@@ -82,13 +84,14 @@ public class ScreenLockModule implements Module {
             case "unlock":
             case "off":
                 try {
-                    for (Student student : StudentManager.getSelectedStudents()) {
-                        ByteBuffer data = ByteBuffer.allocate(2);
-                        data.putShort((short) 0);
-                        data.flip();
+                    ByteBuf request = Unpooled.buffer(2);
+                    request.writeShort((short) 0);
 
-                        sendRequest(student, data);
+                    for (Student student : StudentManager.getSelectedStudents()) {
+                        student.sendRequest(getID(), request);
                     }
+
+                    request.release();
                 } catch (Exception e) {
                     log.error("Failed to unlock screen", e);
                 }
@@ -108,22 +111,23 @@ public class ScreenLockModule implements Module {
             Student student = StudentManager.getFirstSelectedStudent();
 
             if (student != null) {
-                ByteBuffer data = ByteBuffer.allocate(2);
-                data.putShort((short) (!getStatus(student) ? 1 : 0));
-                data.flip();
+                ByteBuf data = Unpooled.buffer(2);
+                data.writeShort((short) (!student.getStatuses(getID()) ? 1 : 0));
 
                 try {
-                    sendRequest(student, data);
-                    setStatus(student, !getStatus(student));
+                    student.sendRequest(getID(), data);
+                    student.setStatuses(getID(), !student.getStatuses(getID()));
                 } catch (Exception ex) {
                     log.error("Failed to execute command", ex);
+                } finally {
+                    data.release();
                 }
             }
         });
 
         StudentManager.getSelectedStudents().addListener((ListChangeListener<Student>) change -> {
             Student student = StudentManager.getFirstSelectedStudent();
-            button.setText((student != null && getStatus(student)? "解锁屏幕" : "锁定屏幕"));
+            button.setText((student != null && student.getStatuses(getID())? "解锁屏幕" : "锁定屏幕"));
         });
 
         return button;

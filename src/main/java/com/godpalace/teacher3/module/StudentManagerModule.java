@@ -156,9 +156,11 @@ public class StudentManagerModule implements Module {
                 // 连接到学生端
                 try {
                     Student student = StudentManager.connect(args[1]);
-                    System.out.println("已连接到学生端: " + student.getName()
-                            + " (ID: " + student.getId() + ")");
-                } catch (IOException e) {
+                    if (student != null) {
+                        System.out.println("已连接到学生端: " + student.getIp()
+                                + " (ID: " + student.getId() + ")");
+                    }
+                } catch (Exception e) {
                     System.out.println("连接失败: " + e.getMessage());
                 }
             }
@@ -216,7 +218,7 @@ public class StudentManagerModule implements Module {
                     if (StudentManager.deselectStudent(Integer.parseInt(args[1]))) {
                         System.out.println("已取消选择学生: " + args[1]);
                     } else {
-                        System.out.println("未找到学生: " + args[1]);
+                        System.out.println("未选择该学生: " + args[1]);
                     }
                 } catch (NumberFormatException e) {
                     System.out.println("命令格式错误, 请使用格式: student deselect [student_id]");
@@ -254,13 +256,8 @@ public class StudentManagerModule implements Module {
                 // 列出所有学生的状态
                 System.out.println("所有学生:");
                 for (Student student : StudentManager.getStudents()) {
-                    boolean isAlive = student.isAlive();
-
                     System.out.println("主机名: "+ student.getName()
-                            + " ID: " + student.getId() + " - "
-                            + (isAlive ? "在线" : "离线"));
-
-                    if (!isAlive) StudentManager.removeStudent(student);
+                            + " ID: " + student.getId());
                 }
             }
 

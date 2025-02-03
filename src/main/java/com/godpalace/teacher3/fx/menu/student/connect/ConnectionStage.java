@@ -15,7 +15,6 @@ import org.kordamp.ikonli.boxicons.BoxiconsRegular;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.awt.*;
-import java.io.IOException;
 
 public class ConnectionStage extends Stage {
     public ConnectionStage() {
@@ -79,7 +78,7 @@ public class ConnectionStage extends Stage {
                     alert.setContentText("你可以开始操作该学生了.");
                     alert.showAndWait();
                 }
-            } catch (IOException ex) {
+            } catch (Exception ex) {
                 Alert alert = new Alert(Alert.AlertType.ERROR);
                 alert.setGraphic(new FontIcon(BoxiconsRegular.ERROR));
                 alert.setTitle("连接失败");

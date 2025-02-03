@@ -22,7 +22,7 @@ public class StudentStatusPane extends FlowPane {
         this.setPadding(new Insets(1));
 
         short i = 0;
-        for (AtomicBoolean status : student.getStatus()) {
+        for (AtomicBoolean status : student.getStatuses()) {
             if (status.get()) {
                 Module module = ModuleManager.getIdMap().get(i);
 

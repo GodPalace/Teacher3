@@ -2,6 +2,8 @@ package com.godpalace.teacher3.module;
 
 import com.godpalace.teacher3.Student;
 import com.godpalace.teacher3.manager.StudentManager;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import javafx.scene.control.Alert;
 import javafx.scene.control.Button;
 import javafx.scene.control.TextInputDialog;
@@ -9,9 +11,6 @@ import javafx.scene.image.Image;
 import lombok.extern.slf4j.Slf4j;
 import org.kordamp.ikonli.boxicons.BoxiconsRegular;
 import org.kordamp.ikonli.javafx.FontIcon;
-
-import java.io.IOException;
-import java.nio.ByteBuffer;
 
 @Slf4j
 public class MessageModule implements Module {
@@ -47,25 +46,20 @@ public class MessageModule implements Module {
             return;
         }
 
-        try {
-            byte[] bytes = args[0].trim().getBytes("GB2312");
-            ByteBuffer data = ByteBuffer.allocate(bytes.length);
-            data.put(bytes);
-            data.flip();
+        byte[] bytes = args[0].trim().getBytes();
+        ByteBuf request = Unpooled.buffer(bytes.length);
+        request.writeBytes(bytes);
 
-            int count = 0;
+        try {
             for (Student student : StudentManager.getSelectedStudents()) {
-                try {
-                    sendRequest(student, data);
-                    count++;
-                } catch (IOException ex) {
-                    System.out.println("发送消息到学生[" + student.getName() + "]失败: " + ex.getMessage());
-                }
+                student.sendRequest(getID(), request);
             }
 
-            System.out.println("消息发送成功! 共有" + count + "个学生发送成功.");
+            System.out.println("消息发送成功!");
         } catch (Exception ex) {
             System.out.println("消息发送失败: " + ex.getMessage());
+        } finally {
+            request.release();
         }
     }
 
@@ -83,39 +77,22 @@ public class MessageModule implements Module {
 
             String message = dialog.getResult();
             if (message == null || message.isEmpty()) return;
-            ByteBuffer data;
 
-            try {
-                byte[] bytes = message.getBytes("GB2312");
-                data = ByteBuffer.allocate(bytes.length);
-                data.put(bytes);
-                data.flip();
-            } catch (Exception ex) {
-                Alert alert = new Alert(Alert.AlertType.ERROR);
-                alert.setGraphic(new FontIcon(BoxiconsRegular.ERROR));
-                alert.setTitle("消息发送失败");
-                alert.setHeaderText("消息编码错误: " + ex.getMessage());
-                alert.show();
+            byte[] bytes = message.getBytes();
+            ByteBuf request = Unpooled.buffer(bytes.length);
+            request.writeBytes(bytes);
 
-                return;
-            }
-
-            int sCount = 0, fCount = 0;
             for (Student student : StudentManager.getSelectedStudents()) {
-                try {
-                    sendRequest(student, data);
-                    sCount++;
-                } catch (IOException ex) {
-                    log.error("发送消息到学生[{}]失败", student.getName(), ex);
-                    fCount++;
-                }
+                student.sendRequest(getID(), request);
             }
 
             Alert alert = new Alert(Alert.AlertType.INFORMATION);
             alert.setGraphic(new FontIcon(BoxiconsRegular.CHECK_CIRCLE));
             alert.setTitle("消息发送成功");
-            alert.setHeaderText("共有" + sCount + "个学生发送成功, " + fCount + "个学生发送失败.");
+            alert.setHeaderText("消息发送成功!");
             alert.show();
+
+            request.release();
         });
 
         return button;

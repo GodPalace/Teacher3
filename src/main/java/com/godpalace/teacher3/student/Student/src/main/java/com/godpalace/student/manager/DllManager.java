@@ -1,6 +1,5 @@
 package com.godpalace.student.manager;
 
-import com.godpalace.student.StudentDatabase;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.File;
@@ -155,13 +154,22 @@ public class DllManager {
     }
 
     public static void initialize() throws Exception {
-        if (!StudentDatabase.lastDllOutPath.isEmpty()) {
-            deleteDir(new File(StudentDatabase.lastDllOutPath));
-            log.debug("Deleted old dll directory: {}", StudentDatabase.lastDllOutPath);
+        File tempDir = new File(System.getenv("TEMP"));
+        File[] files = tempDir.listFiles();
+
+        if (files != null) {
+            for (File file : files) {
+                if (file.isDirectory() && file.getName().startsWith("StudentDll_")) {
+                    try {
+                        deleteDir(file);
+                        log.debug("Deleted dll directory: {}", file.getAbsolutePath());
+                    } catch (Exception ignored) {
+                    }
+                }
+            }
         }
 
         new File(outPath).mkdirs();
-        StudentDatabase.lastDllOutPath = outPath;
 
         releaseUnloadDll();
         releaseLoadDll();

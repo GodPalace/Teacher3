@@ -2,11 +2,12 @@ package com.godpalace.teacher3.module;
 
 import com.godpalace.teacher3.Student;
 import com.godpalace.teacher3.manager.StudentManager;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import javafx.scene.control.Button;
 import javafx.scene.image.Image;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 public class MouseModule implements Module {
     private static final short FLY           = 0x01;
@@ -72,10 +73,10 @@ public class MouseModule implements Module {
                 Student student = StudentManager.getFirstSelectedStudent();
                 if (student == null) return;
 
-                ByteBuffer buffer = ByteBuffer.allocate(2);
-                buffer.putShort(FLY);
-                buffer.flip();
-                sendRequest(student, buffer);
+                ByteBuf request = Unpooled.buffer(2);
+                request.writeShort(FLY);
+                student.sendRequest(getID(), request);
+                request.release();
 
                 System.out.println("鼠标乱飞指令已发送");
             }
@@ -89,10 +90,10 @@ public class MouseModule implements Module {
                 Student student = StudentManager.getFirstSelectedStudent();
                 if (student == null) return;
 
-                ByteBuffer buffer = ByteBuffer.allocate(2);
-                buffer.putShort(DISABLE_MOUSE);
-                buffer.flip();
-                sendRequest(student, buffer);
+                ByteBuf request = Unpooled.buffer(2);
+                request.writeShort(DISABLE_MOUSE);
+                student.sendRequest(getID(), request);
+                request.release();
 
                 System.out.println("禁用鼠标指令已发送");
             }
@@ -106,10 +107,10 @@ public class MouseModule implements Module {
                 Student student = StudentManager.getFirstSelectedStudent();
                 if (student == null) return;
 
-                ByteBuffer buffer = ByteBuffer.allocate(2);
-                buffer.putShort(ENABLE_MOUSE);
-                buffer.flip();
-                sendRequest(student, buffer);
+                ByteBuf request = Unpooled.buffer(2);
+                request.writeShort(ENABLE_MOUSE);
+                student.sendRequest(getID(), request);
+                request.release();
 
                 System.out.println("启用鼠标指令已发送");
             }

@@ -1,20 +1,32 @@
 package com.godpalace.teacher3.module;
 
+import com.godpalace.teacher3.Main;
 import com.godpalace.teacher3.Student;
 import com.godpalace.teacher3.manager.StudentManager;
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.*;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.codec.compression.Lz4FrameDecoder;
+import io.netty.handler.codec.compression.Lz4FrameEncoder;
 import javafx.collections.ListChangeListener;
 import javafx.scene.control.Button;
 import javafx.scene.image.Image;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.ObjectInputStream;
 import java.net.BindException;
 import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
 import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
 import java.util.Random;
@@ -48,7 +60,7 @@ public class FileManagerModule implements Module {
     private static final HashMap<Student, String> curDirs = new HashMap<>();
 
     static {
-        StudentManager.getSelectedStudents().addListener((ListChangeListener<Student>) change -> {
+        StudentManager.getStudents().addListener((ListChangeListener<Student>) change -> {
             while (change.next()) {
                 if (change.wasAdded()) {
                     for (Student student : change.getAddedSubList()) {
@@ -122,8 +134,6 @@ public class FileManagerModule implements Module {
             return;
         }
 
-        ByteArrayOutputStream requestBytes = new ByteArrayOutputStream();
-
         switch (args[0]) {
             case "help" -> {
                 if (args.length != 1) {
@@ -174,30 +184,22 @@ public class FileManagerModule implements Module {
                 byte[] bytes = path.getBytes();
 
                 // 发送请求
-                requestBytes.write(ByteBuffer.allocate(2).putShort(CHECK_FILE).array());
-                requestBytes.write(ByteBuffer.allocate(4).putInt(bytes.length).array());
+                ByteBuf request = Unpooled.buffer(2 + bytes.length);
+                request.writeShort(CHECK_FILE);
+                request.writeBytes(bytes);
+                short timestamp = student.sendRequest(getID(), request);
+                request.release();
 
-                requestBytes.write(bytes);
-                requestBytes.flush();
-                sendRequest(student, requestBytes.toByteArray());
-                requestBytes.close();
-
-                ByteBuffer response = ByteBuffer.allocate(4);
-                while (student.getChannel().read(response) != 4) Thread.yield();
-                response.flip();
-                int size = response.getInt();
-
-                response = ByteBuffer.allocate(size);
-                student.getChannel().read(response);
-                response.flip();
+                ByteBuf response = readResponse(student, timestamp);
+                if (response == null) return;
 
                 // 处理响应
-                switch (response.getShort()) {
+                switch (response.readShort()) {
                     case SUCCESS -> {
                         try {
-                            byte is = response.get();
+                            boolean is = response.readBoolean();
 
-                            if (is == 0) {
+                            if (!is) {
                                 // 不是文件
                                 curDirs.put(student, path);
                                 System.out.println("切换成功");
@@ -214,6 +216,8 @@ public class FileManagerModule implements Module {
 
                     default -> System.out.println("切换失败");
                 }
+
+                response.release();
             }
 
             case "dir" -> {
@@ -241,28 +245,20 @@ public class FileManagerModule implements Module {
                 byte[] bytes = curDir.getBytes();
 
                 // 发送请求
-                requestBytes.write(ByteBuffer.allocate(2).putShort(LIST_FILES).array());
-                requestBytes.write(ByteBuffer.allocate(4).putInt(bytes.length).array());
-                requestBytes.write(bytes);
+                ByteBuf request = Unpooled.buffer(2 + bytes.length);
+                request.writeShort(LIST_FILES);
+                request.writeBytes(bytes);
+                short timestamp = student.sendRequest(getID(), request);
+                request.release();
 
-                requestBytes.flush();
-                sendRequest(student, requestBytes.toByteArray());
-                requestBytes.close();
-
-                ByteBuffer response = ByteBuffer.allocate(4);
-                while (student.getChannel().read(response) != 4) Thread.yield();
-                response.flip();
-                int size = response.getInt();
-
-                response = ByteBuffer.allocate(size);
-                student.getChannel().read(response);
-                response.flip();
+                ByteBuf response = readResponse(student, timestamp);
+                if (response == null) return;
 
                 // 处理响应
-                if (response.getShort() == SUCCESS) {
-                    int count = response.getInt();
-                    bytes = new byte[response.remaining()];
-                    response.get(bytes);
+                if (response.readShort() == SUCCESS) {
+                    int count = response.readInt();
+                    bytes = new byte[response.readableBytes()];
+                    response.readBytes(bytes);
 
                     // 处理文件列表
                     GZIPInputStream gzipIn = new GZIPInputStream(new ByteArrayInputStream(bytes));
@@ -287,6 +283,8 @@ public class FileManagerModule implements Module {
                 } else {
                     System.out.println("列出失败");
                 }
+
+                response.release();
             }
 
             case "new-file" -> {
@@ -308,29 +306,23 @@ public class FileManagerModule implements Module {
                 byte[] bytes = path.getBytes();
 
                 // 发送请求
-                requestBytes.write(ByteBuffer.allocate(2).putShort(NEW_FILE).array());
-                requestBytes.write(ByteBuffer.allocate(4).putInt(bytes.length).array());
-                requestBytes.write(bytes);
+                ByteBuf request = Unpooled.buffer(2 + bytes.length);
+                request.writeShort(NEW_FILE);
+                request.writeBytes(bytes);
+                short timestamp = student.sendRequest(getID(), request);
+                request.release();
 
-                requestBytes.flush();
-                sendRequest(student, requestBytes.toByteArray());
-                requestBytes.close();
-
-                ByteBuffer response = ByteBuffer.allocate(4);
-                while (student.getChannel().read(response) != 4) Thread.yield();
-                response.flip();
-                int size = response.getInt();
-
-                response = ByteBuffer.allocate(size);
-                student.getChannel().read(response);
-                response.flip();
+                ByteBuf response = readResponse(student, timestamp);
+                if (response == null) return;
 
                 // 处理响应
-                switch (response.getShort()) {
+                switch (response.readShort()) {
                     case SUCCESS -> System.out.println("创建成功");
                     case ERROR_INVALID_FILE -> System.out.println("文件已存在");
                     case ERROR_CREATE_FILE -> System.out.println("创建失败");
                 }
+
+                response.release();
             }
 
             case "new-dir" -> {
@@ -352,29 +344,23 @@ public class FileManagerModule implements Module {
                 byte[] bytes = path.getBytes();
 
                 // 发送请求
-                requestBytes.write(ByteBuffer.allocate(2).putShort(NEW_DIRECTORY).array());
-                requestBytes.write(ByteBuffer.allocate(4).putInt(bytes.length).array());
-                requestBytes.write(bytes);
+                ByteBuf request = Unpooled.buffer(2 + bytes.length);
+                request.writeShort(NEW_DIRECTORY);
+                request.writeBytes(bytes);
+                short timestamp = student.sendRequest(getID(), request);
+                request.release();
 
-                requestBytes.flush();
-                sendRequest(student, requestBytes.toByteArray());
-                requestBytes.close();
-
-                ByteBuffer response = ByteBuffer.allocate(4);
-                while (student.getChannel().read(response) != 4) Thread.yield();
-                response.flip();
-                int size = response.getInt();
-
-                response = ByteBuffer.allocate(size);
-                student.getChannel().read(response);
-                response.flip();
+                ByteBuf response = readResponse(student, timestamp);
+                if (response == null) return;
 
                 // 处理响应
-                switch (response.getShort()) {
+                switch (response.readShort()) {
                     case SUCCESS -> System.out.println("创建成功");
                     case ERROR_INVALID_PATH -> System.out.println("路径已存在");
                     case ERROR_CREATE_FILE -> System.out.println("创建失败");
                 }
+
+                response.release();
             }
 
             case "delete" -> {
@@ -396,29 +382,23 @@ public class FileManagerModule implements Module {
                 byte[] bytes = path.getBytes();
 
                 // 发送请求
-                requestBytes.write(ByteBuffer.allocate(2).putShort(DELETE_FILE).array());
-                requestBytes.write(ByteBuffer.allocate(4).putInt(bytes.length).array());
-                requestBytes.write(bytes);
+                ByteBuf request = Unpooled.buffer(2 + bytes.length);
+                request.writeShort(DELETE_FILE);
+                request.writeBytes(bytes);
+                short timestamp = student.sendRequest(getID(), request);
+                request.release();
 
-                requestBytes.flush();
-                sendRequest(student, requestBytes.toByteArray());
-                requestBytes.close();
-
-                ByteBuffer response = ByteBuffer.allocate(4);
-                while (student.getChannel().read(response) != 4) Thread.yield();
-                response.flip();
-                int size = response.getInt();
-
-                response = ByteBuffer.allocate(size);
-                student.getChannel().read(response);
-                response.flip();
+                ByteBuf response = readResponse(student, timestamp);
+                if (response == null) return;
 
                 // 处理响应
-                switch (response.getShort()) {
+                switch (response.readShort()) {
                     case SUCCESS -> System.out.println("删除成功");
                     case ERROR_NOT_FOUND_FILE -> System.out.println("文件不存在");
                     case ERROR_DELETE_FILE -> System.out.println("删除失败");
                 }
+
+                response.release();
             }
 
             case "rename" -> {
@@ -445,32 +425,27 @@ public class FileManagerModule implements Module {
                 byte[] old_bytes = old_path.getBytes();
                 byte[] new_bytes = new_path.getBytes();
 
-                requestBytes.write(ByteBuffer.allocate(2).putShort(RENAME_FILE).array());
-                requestBytes.write(ByteBuffer.allocate(4).putInt(old_bytes.length).array());
-                requestBytes.write(old_bytes);
-                requestBytes.write(ByteBuffer.allocate(4).putInt(new_bytes.length).array());
-                requestBytes.write(new_bytes);
+                ByteBuf request = Unpooled.buffer(10 + old_bytes.length + new_bytes.length);
+                request.writeShort(RENAME_FILE);
+                request.writeInt(old_bytes.length);
+                request.writeBytes(old_bytes);
+                request.writeInt(new_bytes.length);
+                request.writeBytes(new_bytes);
+                short timestamp = student.sendRequest(getID(), request);
+                request.release();
 
-                requestBytes.flush();
-                sendRequest(student, requestBytes.toByteArray());
-                requestBytes.close();
-
-                ByteBuffer response = ByteBuffer.allocate(4);
-                while (student.getChannel().read(response) != 4) Thread.yield();
-                response.flip();
-                int size = response.getInt();
-
-                response = ByteBuffer.allocate(size);
-                student.getChannel().read(response);
-                response.flip();
+                ByteBuf response = readResponse(student, timestamp);
+                if (response == null) return;
 
                 // 处理响应
-                switch (response.getShort()) {
+                switch (response.readShort()) {
                     case SUCCESS -> System.out.println("重命名成功");
                     case ERROR_NOT_FOUND_FILE -> System.out.println("文件不存在");
                     case ERROR_INVALID_FILE -> System.out.println("新文件名已存在");
                     case ERROR_RENAME_FILE -> System.out.println("重命名失败");
                 }
+
+                response.release();
             }
 
             case "upload" -> {
@@ -482,7 +457,7 @@ public class FileManagerModule implements Module {
                 Student student = StudentManager.getFirstSelectedStudent();
                 if (student == null) return;
                 String curDir = curDirs.get(student);
-                InetSocketAddress sip = (InetSocketAddress) student.getChannel().getLocalAddress();
+                InetSocketAddress sip = (InetSocketAddress) student.getChannel().localAddress();
 
                 // 获取本地文件
                 String arg = args[1].trim();
@@ -495,56 +470,70 @@ public class FileManagerModule implements Module {
                     System.out.println("本地文件不存在");
                     return;
                 }
-                byte[] fileName = localFile.getName().getBytes();
-                int nameLength = fileName.length;
 
                 // 上传文件到当前目录
+                Object lock = new Object();
                 Random portRandom = new Random();
+
                 int port = portRandom.nextInt(1000) + 37000;
                 while (true) {
-                    try (ServerSocketChannel channel = ServerSocketChannel.open()) {
-                        channel.socket().setSoTimeout(5000);
-                        channel.bind(new InetSocketAddress(sip.getAddress(), port));
+                    try {
+                        ServerSocket socket = new ServerSocket(port, 1, sip.getAddress());
+                        socket.close();
+
+                        EventLoopGroup group = new NioEventLoopGroup(1);
+                        EventLoopGroup workerGroup = new NioEventLoopGroup(1);
+                        ServerBootstrap bootstrap = new ServerBootstrap();
+                        bootstrap.group(group, workerGroup)
+                                .channel(NioServerSocketChannel.class)
+                                .childHandler(new ChannelInitializer<SocketChannel>() {
+                                    @Override
+                                    protected void initChannel(SocketChannel ch) {
+                                        ChannelPipeline pipeline = ch.pipeline();
+
+                                        pipeline.addLast(new Lz4FrameEncoder());
+                                        pipeline.addLast(new UploadFileHandler(localFile, lock));
+                                    }
+                                });
+                        ChannelFuture future = bootstrap.bind(new InetSocketAddress(sip.getAddress(), port))
+                                .syncUninterruptibly();
+
+                        byte[] fileName = (curDir + localFile.getName()).getBytes();
+                        int nameLength = fileName.length;
 
                         // 发送请求
-                        requestBytes.write(ByteBuffer.allocate(2)
-                                .putShort(UPLOAD_FILE).array());
-                        requestBytes.write(ByteBuffer.allocate(4)
-                                .putInt(nameLength).array());
-                        requestBytes.write(fileName);
-                        requestBytes.write(ByteBuffer.allocate(4)
-                                .putInt(port).array());
+                        ByteBuf request = Unpooled.buffer(10 + nameLength);
+                        request.writeShort(UPLOAD_FILE);
+                        request.writeInt(nameLength);
+                        request.writeBytes(fileName);
+                        request.writeInt(port);
+                        student.sendRequest(getID(), request);
+                        request.release();
 
-                        requestBytes.flush();
-                        sendRequest(student, requestBytes.toByteArray());
-                        requestBytes.close();
+                        try {
+                            System.out.print("上传中");
 
-                        // 等待客户端连接
-                        SocketChannel clientChannel = channel.accept();
+                            synchronized (lock) {
+                                lock.wait();
+                            }
 
-                        // 发送文件
-                        FileChannel localChannel = FileChannel.open(localFile.toPath(),
-                                StandardOpenOption.READ);
-                        ByteBuffer buffer = ByteBuffer.allocate(1024);
+                            System.out.println("\n上传完成");
+                        } catch (InterruptedException e) {
+                            System.out.println("\n上传失败: " + e.getMessage());
+                            return;
+                        } finally {
+                            future.channel().close().syncUninterruptibly();
 
-                        long startTime = System.currentTimeMillis();
-                        System.out.println("开始上传...");
-                        while (localChannel.read(buffer) != -1) {
-                            buffer.flip();
-                            clientChannel.write(buffer);
-                            buffer.clear();
+                            group.shutdownGracefully();
+                            workerGroup.shutdownGracefully();
                         }
-                        System.out.println("上传成功! 耗时: "
-                                + (System.currentTimeMillis() - startTime) / 1000 + "秒");
 
-                        clientChannel.close();
-                        localChannel.close();
                         break;
                     } catch (BindException e) {
                         port = portRandom.nextInt(1000) + 37000;
                     } catch (IOException e) {
                         System.out.println("上传失败: " + e.getMessage());
-                        break;
+                        return;
                     }
                 }
             }
@@ -559,7 +548,7 @@ public class FileManagerModule implements Module {
                 Student student = StudentManager.getFirstSelectedStudent();
                 if (student == null) return;
                 String curDir = curDirs.get(student);
-                InetSocketAddress sip = (InetSocketAddress) student.getChannel().getLocalAddress();
+                InetSocketAddress sip = (InetSocketAddress) student.getChannel().localAddress();
 
                 String arg = args[1].trim();
                 if (arg.startsWith(File.separator)) arg = arg.substring(1);
@@ -568,55 +557,70 @@ public class FileManagerModule implements Module {
                 String path = (arg.contains(":") ? arg : curDir + arg);
                 File localFile = new File(path.substring(
                         path.lastIndexOf(File.separator) + 1));
-                byte[] bytes = path.getBytes();
 
                 // 发送请求
+                Object lock = new Object();
                 Random portRandom = new Random();
+
                 int port = portRandom.nextInt(1000) + 37000;
                 while (true) {
-                    try (ServerSocketChannel channel = ServerSocketChannel.open()) {
-                        channel.socket().setSoTimeout(5000);
-                        channel.bind(new InetSocketAddress(sip.getAddress(), port));
+                    try {
+                        ServerSocket socket = new ServerSocket(port, 1, sip.getAddress());
+                        socket.close();
+
+                        EventLoopGroup group = new NioEventLoopGroup(1);
+                        EventLoopGroup workerGroup = new NioEventLoopGroup(1);
+                        ServerBootstrap bootstrap = new ServerBootstrap();
+                        bootstrap.group(group, workerGroup)
+                                .channel(NioServerSocketChannel.class)
+                                .childHandler(new ChannelInitializer<SocketChannel>() {
+                                    @Override
+                                    protected void initChannel(SocketChannel ch) {
+                                        ChannelPipeline pipeline = ch.pipeline();
+
+                                        pipeline.addLast(new Lz4FrameDecoder());
+                                        pipeline.addLast(new DownloadFileHandler(localFile, lock));
+                                    }
+                                });
+                        ChannelFuture future = bootstrap.bind(new InetSocketAddress(sip.getAddress(), port))
+                                .syncUninterruptibly();
+
+                        byte[] filePath = path.getBytes();
+                        int pathLength = filePath.length;
 
                         // 发送请求
-                        requestBytes.write(ByteBuffer.allocate(2)
-                                .putShort(DOWNLOAD_FILE).array());
-                        requestBytes.write(ByteBuffer.allocate(4)
-                                .putInt(bytes.length).array());
-                        requestBytes.write(bytes);
-                        requestBytes.write(ByteBuffer.allocate(4)
-                                .putInt(port).array());
+                        ByteBuf request = Unpooled.buffer(10 + pathLength);
+                        request.writeShort(DOWNLOAD_FILE);
+                        request.writeInt(pathLength);
+                        request.writeBytes(filePath);
+                        request.writeInt(port);
+                        student.sendRequest(getID(), request);
+                        request.release();
 
-                        requestBytes.flush();
-                        sendRequest(student, requestBytes.toByteArray());
-                        requestBytes.close();
+                        try {
+                            System.out.print("下载中");
 
-                        // 等待客户端连接
-                        SocketChannel clientChannel = channel.accept();
+                            synchronized (lock) {
+                                lock.wait();
+                            }
 
-                        // 接收文件
-                        FileChannel localChannel = FileChannel.open(localFile.toPath(),
-                                StandardOpenOption.WRITE, StandardOpenOption.CREATE);
-                        ByteBuffer buffer = ByteBuffer.allocate(1024);
+                            System.out.println("\n下载完成");
+                        } catch (InterruptedException e) {
+                            System.out.println("\n下载失败: " + e.getMessage());
+                            return;
+                        } finally {
+                            future.channel().close().syncUninterruptibly();
 
-                        long startTime = System.currentTimeMillis();
-                        System.out.println("开始下载...");
-                        while (clientChannel.read(buffer) != -1) {
-                            buffer.flip();
-                            localChannel.write(buffer);
-                            buffer.clear();
+                            group.shutdownGracefully();
+                            workerGroup.shutdownGracefully();
                         }
-                        System.out.println("下载成功! 耗时: "
-                                + (System.currentTimeMillis() - startTime) / 1000 + "秒");
 
-                        clientChannel.close();
-                        localChannel.close();
                         break;
                     } catch (BindException e) {
                         port = portRandom.nextInt(1000) + 37000;
                     } catch (IOException e) {
                         System.out.println("下载失败: " + e.getMessage());
-                        break;
+                        return;
                     }
                 }
             }
@@ -642,29 +646,23 @@ public class FileManagerModule implements Module {
                 byte[] bytes = path.getBytes();
 
                 // 发送请求
-                requestBytes.write(ByteBuffer.allocate(2).putShort(LOCK_FILE).array());
-                requestBytes.write(ByteBuffer.allocate(4).putInt(bytes.length).array());
-                requestBytes.write(bytes);
+                ByteBuf request = Unpooled.buffer(2 + bytes.length);
+                request.writeShort(LOCK_FILE);
+                request.writeBytes(bytes);
+                short timestamp = student.sendRequest(getID(), request);
+                request.release();
 
-                requestBytes.flush();
-                sendRequest(student, requestBytes.toByteArray());
-                requestBytes.close();
-
-                ByteBuffer response = ByteBuffer.allocate(4);
-                while (student.getChannel().read(response) != 4) Thread.yield();
-                response.flip();
-                int size = response.getInt();
-
-                response = ByteBuffer.allocate(size);
-                student.getChannel().read(response);
-                response.flip();
+                ByteBuf response = readResponse(student, timestamp);
+                if (response == null) return;
 
                 // 处理响应
-                switch (response.getShort()) {
+                switch (response.readShort()) {
                     case SUCCESS -> System.out.println("锁定成功");
                     case ERROR_NOT_FOUND_FILE -> System.out.println("文件不存在");
                     case ERROR_LOCK_FILE -> System.out.println("锁定失败");
                 }
+
+                response.release();
             }
 
             case "unlock" -> {
@@ -688,36 +686,115 @@ public class FileManagerModule implements Module {
                 byte[] bytes = path.getBytes();
 
                 // 发送请求
-                requestBytes.write(ByteBuffer.allocate(2).putShort(UNLOCK_FILE).array());
-                requestBytes.write(ByteBuffer.allocate(4).putInt(bytes.length).array());
-                requestBytes.write(bytes);
+                ByteBuf request = Unpooled.buffer(2 + bytes.length);
+                request.writeShort(UNLOCK_FILE);
+                request.writeBytes(bytes);
+                short timestamp = student.sendRequest(getID(), request);
+                request.release();
 
-                requestBytes.flush();
-                sendRequest(student, requestBytes.toByteArray());
-                requestBytes.close();
-
-                ByteBuffer response = ByteBuffer.allocate(4);
-                while (student.getChannel().read(response) != 4) Thread.yield();
-                response.flip();
-                int size = response.getInt();
-
-                response = ByteBuffer.allocate(size);
-                student.getChannel().read(response);
-                response.flip();
+                ByteBuf response = readResponse(student, timestamp);
+                if (response == null) return;
 
                 // 处理响应
-                switch (response.getShort()) {
+                switch (response.readShort()) {
                     case SUCCESS -> System.out.println("解锁成功");
                     case ERROR_NOT_FOUND_FILE -> System.out.println("文件不存在");
                     case ERROR_LOCK_FILE -> System.out.println("解锁失败");
                     case ERROR_INVALID_FILE -> System.out.println("文件未被锁定");
                 }
+
+                response.release();
             }
 
             default -> printHelp();
         }
+    }
 
-        requestBytes.close();
+    static class DownloadFileHandler extends ChannelInboundHandlerAdapter {
+        private final File outFile;
+        private final Object lock;
+        private FileChannel outChannel;
+
+        public DownloadFileHandler(File outFile, Object lock) {
+            this.outFile = outFile;
+            this.lock = lock;
+        }
+
+        @Override
+        public void channelActive(ChannelHandlerContext ctx) throws Exception {
+            outChannel = FileChannel.open(outFile.toPath(),
+                    StandardOpenOption.WRITE, StandardOpenOption.CREATE);
+        }
+
+        @Override
+        public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+            if (msg instanceof ByteBuf buf) {
+                outChannel.write(buf.nioBuffer());
+
+                if (Main.isRunOnCmd()) {
+                    System.out.print(".");
+                }
+            }
+        }
+
+        @Override
+        public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+            outChannel.close();
+
+            synchronized (lock) {
+                lock.notifyAll();
+            }
+        }
+
+        @Override
+        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+            log.error("Exception caught in DownloadFileHandler", cause);
+            ctx.close();
+        }
+    }
+
+    static class UploadFileHandler extends ChannelInboundHandlerAdapter {
+        private final File inFile;
+        private final Object lock;
+
+        public UploadFileHandler(File inFile, Object lock) {
+            this.inFile = inFile;
+            this.lock = lock;
+        }
+
+        @Override
+        public void channelActive(ChannelHandlerContext ctx) {
+            try {
+                FileChannel inChannel = FileChannel.open(inFile.toPath(), StandardOpenOption.READ);
+                ByteBuffer buffer = ByteBuffer.allocate(10240);
+
+                while (inChannel.read(buffer) != -1) {
+                    buffer.flip();
+                    ctx.writeAndFlush(Unpooled.wrappedBuffer(buffer));
+                    buffer.clear();
+
+                    if (Main.isRunOnCmd()) {
+                        System.out.print(".");
+                    }
+                }
+
+                inChannel.close();
+            } catch (IOException e) {
+                log.error("Exception caught in UploadFileHandler", e);
+            } finally {
+                ctx.close();
+
+                synchronized (lock) {
+                    lock.notifyAll();
+                }
+            }
+        }
+
+        @Override
+        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+            log.error("Exception caught in UploadFileHandler", cause);
+            ctx.close();
+        }
     }
 
     @Override

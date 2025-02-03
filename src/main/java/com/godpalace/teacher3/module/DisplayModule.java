@@ -2,6 +2,8 @@ package com.godpalace.teacher3.module;
 
 import com.godpalace.teacher3.Student;
 import com.godpalace.teacher3.manager.StudentManager;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import javafx.scene.control.Button;
 import javafx.scene.image.Image;
 import lombok.extern.slf4j.Slf4j;
@@ -12,7 +14,6 @@ import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 @Slf4j
 public class DisplayModule implements Module {
@@ -68,48 +69,45 @@ public class DisplayModule implements Module {
         }
 
         if (args[0].equals("capture")) {
-            ByteBuffer buffer = ByteBuffer.allocate(2);
-            buffer.putShort(CAPTURING);
-            buffer.flip();
+            ByteBuf buf = Unpooled.buffer(2);
+            buf.writeShort(CAPTURING);
 
             for (final Student student : StudentManager.getSelectedStudents()) {
                 File file = new File(System.currentTimeMillis() + "-capture.png");
 
                 try (FileOutputStream fileOut = new FileOutputStream(file)) {
-                    sendRequest(student, buffer);
+                    short timestamp = student.sendRequest(getID(), buf);
                     Thread.sleep(1000);
 
-                    int count = 0;
-                    ByteBuffer response = ByteBuffer.allocate(RESPONSE_HEAD_SIZE);
-                    while (student.getChannel().read(response) != RESPONSE_HEAD_SIZE) {
-                        synchronized (this) {
-                            wait(1000);
-                        }
-
-                        if (count++ > 5) {
-                            System.err.println("屏幕监视模块获取屏幕截图超时");
-                            break;
-                        }
-                    }
-                    response.flip();
-                    int size = response.getInt();
-
-                    response = ByteBuffer.allocate(size);
-                    student.getChannel().read(response);
-                    response.flip();
+                    ByteBuf response = readResponse(student, timestamp);
+                    if (response == null) return;
 
                     // 保存到本地
-                    BufferedImage image = ImageIO.read(new ByteArrayInputStream(response.array()));
-                    if (image == null) throw new IOException("无法解析屏幕截图");
-                    ImageIO.write(image, "PNG", fileOut);
-                    fileOut.flush();
+                    try {
+                        byte[] bytes = new byte[response.readableBytes()];
+                        response.readBytes(bytes);
 
-                    System.out.println("屏幕截图已保存到本地: " + file.getAbsolutePath());
+                        BufferedImage image = ImageIO.read(new ByteArrayInputStream(bytes));
+                        if (image != null) {
+                            ImageIO.write(image, "PNG", fileOut);
+                            fileOut.flush();
+
+                            System.out.println("屏幕截图已保存到本地: " + file.getAbsolutePath());
+                        } else {
+                            System.out.println("无法解析屏幕截图数据");
+                        }
+                    } catch (IOException e) {
+                        System.out.println("无法保存屏幕截图到本地: " + e.getMessage());
+                    } finally {
+                        response.release();
+                    }
                 } catch (IOException | InterruptedException e) {
                     System.out.println("\n屏幕监视模块发送请求失败: " + e.getMessage());
                     System.out.print("> ");
                 }
             }
+
+            buf.release();
         } else {
             printHelp();
         }

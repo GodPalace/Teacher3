@@ -2,12 +2,13 @@ package com.godpalace.teacher3.module;
 
 import com.godpalace.teacher3.Student;
 import com.godpalace.teacher3.manager.StudentManager;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import javafx.scene.control.Button;
 import javafx.scene.image.Image;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 @Slf4j
 public class UsbModule implements Module {
@@ -64,25 +65,27 @@ public class UsbModule implements Module {
 
         switch (args[0]) {
             case "disable" -> {
-                ByteBuffer data = ByteBuffer.allocate(2);
-                data.putShort(DISABLE);
-                data.flip();
+                ByteBuf request = Unpooled.buffer(2);
+                request.writeShort(DISABLE);
 
                 for (Student student : StudentManager.getSelectedStudents()) {
-                    sendRequest(student, data);
+                    student.sendRequest(getID(), request);
                     System.out.println(student.getName() + "禁用USB成功");
                 }
+
+                request.release();
             }
 
             case "enable" -> {
-                ByteBuffer data = ByteBuffer.allocate(2);
-                data.putShort(ENABLE);
-                data.flip();
+                ByteBuf request = Unpooled.buffer(2);
+                request.writeShort(ENABLE);
 
                 for (Student student : StudentManager.getSelectedStudents()) {
-                    sendRequest(student, data);
+                    student.sendRequest(getID(), request);
                     System.out.println(student.getName() + "启用USB成功");
                 }
+
+                request.release();
             }
 
             default -> printHelp();

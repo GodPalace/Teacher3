@@ -32,9 +32,6 @@ public class Main {
     private static final HashMap<InetAddress, NetworkInterface> addresses = new HashMap<>();
 
     private static void initializeAll() throws Exception {
-        // Initialize the database
-        StudentDatabase.initialize();
-
         // Initialize the dll
         DllManager.initialize();
 
@@ -59,7 +56,6 @@ public class Main {
                 }
             }
         }
-        NetworkCore.manage();
 
         // Initialize the modules
         ModuleManager.initialize();

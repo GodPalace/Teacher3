@@ -1,10 +1,10 @@
 package com.godpalace.student.module;
 
 import com.godpalace.student.Teacher;
+import io.netty.buffer.ByteBuf;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
-import java.nio.ByteBuffer;
 
 public class LightScreenModule implements Module {
     private static final Frame lightFrame = new Frame();
@@ -33,10 +33,12 @@ public class LightScreenModule implements Module {
     }
 
     @Override
-    public void execute(Teacher teacher, ByteBuffer data) throws Exception {
+    public ByteBuf execute(Teacher teacher, ByteBuf data) throws Exception {
         lightFrame.setVisible(true);
         Thread.sleep(100);
         lightFrame.setVisible(false);
+
+        return null;
     }
 
     @Override

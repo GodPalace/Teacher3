@@ -1,15 +1,13 @@
 package com.godpalace.student.module;
 
-import com.godpalace.student.Main;
 import com.godpalace.student.Teacher;
 import com.godpalace.student.manager.ThreadPoolManager;
+import io.netty.buffer.ByteBuf;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.InputStream;
 import java.net.InetSocketAddress;
 import java.net.URL;
-import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
 
 /*
@@ -32,7 +30,7 @@ public class ReverseConnectModule implements Module {
     }
 
     @Override
-    public void execute(Teacher teacher, ByteBuffer data) {
+    public ByteBuf execute(Teacher teacher, ByteBuf data) {
         ThreadPoolManager.getExecutor().execute(() -> {
             try {
                 // 读取配置文件
@@ -82,9 +80,7 @@ public class ReverseConnectModule implements Module {
                 // 连接教师端
                 while (true) {
                     try {
-                        SocketChannel channel = SocketChannel.open(new InetSocketAddress(ip, port));
-                        Teacher t = new Teacher(channel);
-                        Main.getDefaultCore().addTeacher(t);
+                        Teacher t = new Teacher(new InetSocketAddress(ip, port));
 
                         log.debug("Connected to teacher: {}", t.getIp());
                         break;
@@ -104,6 +100,8 @@ public class ReverseConnectModule implements Module {
                 log.error("Failed to execute module", e);
             }
         });
+
+        return null;
     }
 
     @Override

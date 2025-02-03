@@ -4,6 +4,11 @@ import com.godpalace.teacher3.Main;
 import com.godpalace.teacher3.Student;
 import com.godpalace.teacher3.fx.message.Notification;
 import com.godpalace.teacher3.module.Module;
+import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
 import javafx.collections.FXCollections;
 import javafx.collections.ListChangeListener;
 import javafx.collections.ObservableList;
@@ -23,10 +28,7 @@ import org.pomo.toasterfx.model.impl.ToastTypes;
 
 import java.io.*;
 import java.net.*;
-import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
-import java.util.Iterator;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
@@ -42,33 +44,6 @@ public class StudentManager {
             FXCollections.synchronizedObservableList(FXCollections.observableArrayList());
 
     static {
-        ThreadPoolManager.getExecutor().execute(new Runnable() {
-            @Override
-            public void run() {
-                while (true) {
-                    try {
-                        Iterator<Student> iterator = students.iterator();
-                        while (iterator.hasNext()) {
-                            Student student = iterator.next();
-
-                            if (student.isAlive()) continue;
-                            iterator.remove();
-                            StudentManager.deselectStudent(student);
-
-                            student.close();
-                        }
-
-                        synchronized (this) {
-                            wait(500);
-                        }
-                    } catch (Exception e) {
-                        log.error("Error in StudentManager", e);
-                        return;
-                    }
-                }
-            }
-        });
-
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             for (Student student : students) {
                 try {
@@ -172,48 +147,30 @@ public class StudentManager {
         return null;
     }
 
-    public static Student connect(String ip) throws IOException {
+    public static Student connect(String ip) throws Exception {
         InetSocketAddress address = new InetSocketAddress(ip, 37000);
-        if (!address.getAddress().isReachable(3000))
-            return null;
+        if (!address.getAddress().isReachable(5000))
+            throw new SocketException(ip + "不存在或不可到达");
 
-        SocketChannel channel = SocketChannel.open(address);
-        Student student = new Student(channel);
-        students.add(student);
+        EventLoopGroup group = ThreadPoolManager.getGroup();
+        Bootstrap bootstrap = new Bootstrap();
+        bootstrap.group(group)
+                .channel(NioSocketChannel.class)
+                .handler(new ChannelInitializer<SocketChannel>() {
+                    @Override
+                    protected void initChannel(SocketChannel ch) {
+                    }
+                });
+
+        Student student = new Student(bootstrap.connect(address).sync().channel());
+        addStudent(student);
 
         return student;
     }
 
     public static void disconnect(Student student) throws IOException {
         removeStudent(student);
-
-        ByteBuffer buffer = ByteBuffer.allocate(6);
-        buffer.putShort((short) 0x99);
-        buffer.putInt(0);
-        buffer.flip();
-        student.getChannel().write(buffer);
-        buffer.clear();
-
-        int count = 0;
-        while (student.getChannel().read(buffer) != 2) {
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                log.error("Error in StudentManager.disconnect, cause: {}", e.getMessage());
-            }
-
-            if (count++ > 5) {
-                throw new SocketTimeoutException("Timeout while waiting for response");
-            }
-        }
-        buffer.flip();
-        int code = buffer.getShort();
-
-        if (code == 0x00) {
-            student.close();
-        } else {
-            throw new IOException("Error while disconnecting: " + code);
-        }
+        student.close();
     }
 
     public static boolean scan() throws IOException {
@@ -415,7 +372,7 @@ public class StudentManager {
         hyperlink.setOnAction(event -> {
             try {
                 if (scan()) {
-                    Notification.showNotification(
+                    Notification.show(
                             "扫描完成", "扫描已经完成了", ToastTypes.SUCCESS);
                 } else {
                     Alert alert = new Alert(Alert.AlertType.ERROR);

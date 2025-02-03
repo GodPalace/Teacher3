@@ -1,17 +1,35 @@
 package com.godpalace.teacher3.module;
 
+import com.godpalace.teacher3.Main;
 import com.godpalace.teacher3.Student;
+import com.godpalace.teacher3.fx.message.Notification;
 import com.godpalace.teacher3.manager.StudentManager;
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.*;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.netty.handler.codec.compression.Lz4FrameDecoder;
 import javafx.scene.control.Button;
 import javafx.scene.image.Image;
 import lombok.extern.slf4j.Slf4j;
+import org.pomo.toasterfx.model.impl.ToastTypes;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
+import java.net.BindException;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.util.Arrays;
+import java.util.Random;
 
 @Slf4j
 public class ShellModule implements Module {
+    private static final Random random = new Random();
+    private static final EventLoopGroup workerGroup = new NioEventLoopGroup(1);
+
     @Override
     public short getID() {
         return 0x04;
@@ -56,49 +74,114 @@ public class ShellModule implements Module {
         // 选择第一个选中的学生
         Student student = StudentManager.getFirstSelectedStudent();
         if (student == null) return;
+        Object lock = new Object();
 
-        byte[] cmdBytes = cmd.getBytes();
-        ByteBuffer sendBuffer = ByteBuffer.allocate(2 + cmdBytes.length);
-        sendBuffer.putShort((short) 0);
-        sendBuffer.put(cmdBytes);
-        sendBuffer.flip();
-        sendRequest(student, sendBuffer);
-
+        int port = random.nextInt(1000) + 37000;
         while (true) {
-            int count = 0;
+            try {
+                InetAddress local = ((InetSocketAddress) student.getChannel().localAddress()).getAddress();
 
-            ByteBuffer buffer = ByteBuffer.allocate(4);
-            while (student.getChannel().read(buffer) != 4) {
-                try {
-                    synchronized (this) {
-                        wait(1000);
-                    }
+                ServerSocket serverSocket = new ServerSocket(port, 1, local);
+                serverSocket.close();
 
-                    count++;
-                    if (count > 10) {
-                        System.out.println("获取命令结果超时");
-                        return;
-                    }
-                } catch (InterruptedException e) {
-                    log.error("线程中断", e);
+                EventLoopGroup group = new NioEventLoopGroup(1);
+                ServerBootstrap bootstrap = new ServerBootstrap();
+                bootstrap.group(group, workerGroup)
+                        .channel(NioServerSocketChannel.class)
+                        .childHandler(new ChannelInitializer<SocketChannel>() {
+                            @Override
+                            protected void initChannel(SocketChannel ch) {
+                                ChannelPipeline pipeline = ch.pipeline();
+
+                                pipeline.addLast(new Lz4FrameDecoder());
+                                pipeline.addLast(new ShellReceiveHandler(new Listener() {
+                                    @Override
+                                    public void onShellResult(String result) {
+                                        System.out.println(result);
+                                    }
+
+                                    @Override
+                                    public void onShellError() {
+                                        System.out.println("命令执行失败");
+                                    }
+                                }, lock));
+                            }
+                        });
+                bootstrap.bind(local, port).sync();
+
+                byte[] cmdBytes = cmd.getBytes();
+                ByteBuf request = Unpooled.buffer(4 + cmdBytes.length);
+                request.writeInt(port);
+                request.writeBytes(cmdBytes);
+                student.sendRequest(getID(), request);
+                request.release();
+
+                synchronized (lock) {
+                    lock.wait();
                 }
-            }
-            buffer.flip();
-            int dataLength = buffer.getInt();
 
-            buffer = ByteBuffer.allocate(dataLength);
-            student.getChannel().read(buffer);
-            buffer.flip();
-            String result = new String(buffer.array());
-
-            if (result.equals("/SHELL_END/")) break;
-            if (result.equals("/SHELL_ERR/")) {
-                System.out.println("命令执行失败");
                 break;
+            } catch (BindException e) {
+                port = random.nextInt(1000) + 37000;
+            } catch (Exception e) {
+                System.out.println("命令发送失败");
+            }
+        }
+    }
+
+    static class ShellReceiveHandler extends ChannelInboundHandlerAdapter {
+        private final Listener listener;
+        private final Object lock;
+
+        public ShellReceiveHandler(Listener listener, Object lock) {
+            this.listener = listener;
+            this.lock = lock;
+        }
+
+        @Override
+        public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+            if (msg instanceof ByteBuf buf) {
+                byte[] bytes = new byte[buf.readableBytes()];
+                buf.readBytes(bytes);
+                String result = new String(bytes, "GB2312");
+
+                if (result.equals("/SHELL_END/")) listener.onShellEnd();
+                else if (result.equals("/SHELL_ERR/")) listener.onShellError();
+                else listener.onShellResult(result);
+
+                buf.release();
+            }
+        }
+
+        @Override
+        public void channelInactive(ChannelHandlerContext ctx) {
+            synchronized (lock) {
+                lock.notifyAll();
+            }
+        }
+
+        @Override
+        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+            log.error("ShellReceiveHandler exceptionCaught", cause);
+
+            if (Main.isRunOnCmd()) {
+                System.out.println("命令执行失败");
+            } else {
+                Notification.show("命令执行失败", cause.getMessage(), ToastTypes.FAIL);
             }
 
-            System.out.println(result);
-            buffer.clear();
+            ctx.close();
+        }
+    }
+
+    interface Listener {
+        default void onShellResult(String result) {
+        }
+
+        default void onShellEnd() {
+        }
+
+        default void onShellError() {
         }
     }
 

@@ -1,12 +1,16 @@
 package com.godpalace.teacher3.module;
 
+import com.godpalace.teacher3.Main;
 import com.godpalace.teacher3.Student;
+import com.godpalace.teacher3.fx.message.Notification;
+import io.netty.buffer.ByteBuf;
 import javafx.scene.control.Button;
 import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
+import org.pomo.toasterfx.model.impl.ToastTypes;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
+import java.net.SocketTimeoutException;
 
 public interface Module {
     int RESPONSE_HEAD_SIZE = 4;
@@ -33,26 +37,32 @@ public interface Module {
         return button;
     }
 
-    default void sendRequest(Student student, ByteBuffer data) throws IOException {
-        sendRequest(student, data.array());
-    }
+    default ByteBuf readResponse(Student student, short timestamp) throws SocketTimeoutException {
+        short count = 0;
 
-    default void sendRequest(Student student, byte[] bytes) throws IOException {
-        ByteBuffer buffer = ByteBuffer.allocate(6 + bytes.length);
+        while (!student.getResponses().containsKey(getID()) || !student.getResponses().get(getID()).containsKey(timestamp)) {
+            try {
+                synchronized (this) {
+                    wait(100);
+                }
 
-        buffer.putShort(getID());
-        buffer.putInt(bytes.length);
-        buffer.put(bytes);
-        buffer.flip();
+                if (count++ > 70) {
+                    if (Main.isRunOnCmd()) {
+                        System.out.println(getName() + "获取响应超时");
+                    } else {
+                        Notification.show("错误", "获取响应超时: " + getName(), ToastTypes.FAIL);
+                    }
 
-        student.getChannel().write(buffer);
-    }
+                    return null;
+                }
+            } catch (InterruptedException e) {
+                throw new RuntimeException(e);
+            }
+        }
 
-    default void setStatus(Student student, boolean status) {
-        student.getStatus()[getID()].set(status);
-    }
+        ByteBuf buf = student.getResponses().get(getID()).get(timestamp);
+        student.getResponses().get(getID()).remove(timestamp);
 
-    default boolean getStatus(Student student) {
-        return student.getStatus()[getID()].get();
+        return buf;
     }
 }

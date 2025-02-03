@@ -15,7 +15,6 @@ import lombok.extern.slf4j.Slf4j;
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -61,11 +60,11 @@ public class DisplayModule implements Module {
     }
 
     @Override
-    public void execute(Teacher teacher, ByteBuffer data) throws Exception {
-        switch (data.getShort()) {
+    public ByteBuf execute(Teacher teacher, ByteBuf data) throws Exception {
+        switch (data.readShort()) {
             case START -> {
                 String ip = teacher.getIp();
-                int port = data.getInt();
+                int port = data.readInt();
 
                 KcpClient client = new KcpClient();
                 client.init(channelConfig);
@@ -73,13 +72,16 @@ public class DisplayModule implements Module {
 
                 int id = random.nextInt(1000000);
                 while (clients.containsKey(id)) id = random.nextInt(1000000);
-
                 clients.put(id, client);
-                sendResponse(teacher.getChannel(), ByteBuffer.allocate(4).putInt(id));
+
+                ByteBuf buf = Unpooled.buffer(4);
+                buf.writeInt(id);
+
+                return buf;
             }
 
             case STOP -> {
-                int id = data.getInt();
+                int id = data.readInt();
                 KcpClient client = clients.remove(id);
 
                 if (client != null) {
@@ -90,9 +92,12 @@ public class DisplayModule implements Module {
             case CAPTURING -> {
                 Dimension dimension = Toolkit.getDefaultToolkit().getScreenSize();
                 BufferedImage image = robot.createScreenCapture(new Rectangle(dimension));
-                sendResponseWithSize(teacher.getChannel(), new ImageSerialization(image).image);
+
+                return Unpooled.wrappedBuffer(new ImageSerialization(image).image);
             }
         }
+
+        return null;
     }
 
     @Override
@@ -140,7 +145,6 @@ public class DisplayModule implements Module {
 
         @Override
         public void handleClose(Ukcp ukcp) {
-            log.debug("DisplayHandler handleClose");
         }
     }
 }

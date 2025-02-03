@@ -1,10 +1,10 @@
 package com.godpalace.student.module;
 
 import com.godpalace.student.Teacher;
+import io.netty.buffer.ByteBuf;
 import lombok.extern.slf4j.Slf4j;
 
 import java.awt.*;
-import java.nio.ByteBuffer;
 import java.util.Random;
 
 @Slf4j
@@ -40,8 +40,8 @@ public class MouseModule implements Module {
     }
 
     @Override
-    public void execute(Teacher teacher, ByteBuffer data) {
-        switch (data.getShort()) {
+    public ByteBuf execute(Teacher teacher, ByteBuf data) {
+        switch (data.readShort()) {
             case FLY -> {
                 if (robot != null) {
                     int x = random.nextInt(Toolkit.getDefaultToolkit().getScreenSize().height);
@@ -53,6 +53,8 @@ public class MouseModule implements Module {
             case DISABLE_MOUSE -> DisableMouse();
             case ENABLE_MOUSE -> EnableMouse();
         }
+
+        return null;
     }
 
     @Override

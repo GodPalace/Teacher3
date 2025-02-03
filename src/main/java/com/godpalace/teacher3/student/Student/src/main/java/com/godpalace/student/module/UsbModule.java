@@ -1,9 +1,8 @@
 package com.godpalace.student.module;
 
 import com.godpalace.student.Teacher;
+import io.netty.buffer.ByteBuf;
 import lombok.extern.slf4j.Slf4j;
-
-import java.nio.ByteBuffer;
 
 @Slf4j
 public class UsbModule implements Module {
@@ -28,11 +27,13 @@ public class UsbModule implements Module {
     }
 
     @Override
-    public void execute(Teacher teacher, ByteBuffer data) throws Exception {
-        switch (data.getShort()) {
+    public ByteBuf execute(Teacher teacher, ByteBuf data) throws Exception {
+        switch (data.readShort()) {
             case DISABLE -> log.debug("Disable usb: {}", Disable());
             case ENABLE  -> log.debug("Enable usb: {}", Enable());
         }
+
+        return null;
     }
 
     @Override

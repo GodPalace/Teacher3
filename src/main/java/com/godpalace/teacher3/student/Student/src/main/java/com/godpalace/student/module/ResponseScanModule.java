@@ -4,11 +4,10 @@ import com.godpalace.student.Main;
 import com.godpalace.student.NetworkCore;
 import com.godpalace.student.Teacher;
 import com.godpalace.student.manager.ThreadPoolManager;
+import io.netty.buffer.ByteBuf;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.*;
-import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
 import java.util.Map;
 
 @Slf4j
@@ -24,7 +23,7 @@ public class ResponseScanModule implements Module {
     }
 
     @Override
-    public void execute(Teacher teacher, ByteBuffer data) {
+    public ByteBuf execute(Teacher teacher, ByteBuf data) {
         for (Map.Entry<InetAddress, NetworkInterface> entry : Main.getAddresses().entrySet()) {
             ThreadPoolManager.getExecutor().execute(() -> {
                 InetAddress ipKey = entry.getKey();
@@ -47,10 +46,11 @@ public class ResponseScanModule implements Module {
 
                             try {
                                 if (request == 1) {
+                                    // 表示教师希望连接
                                     boolean hasSameTeacher = false;
                                     for (Teacher t : NetworkCore.getTeachers()) {
                                         InetSocketAddress addr =
-                                                (InetSocketAddress) t.getChannel().getRemoteAddress();
+                                                (InetSocketAddress) t.getChannel().remoteAddress();
 
                                         if (addr.getAddress().equals(packet.getAddress())) {
                                             hasSameTeacher = true;
@@ -59,14 +59,11 @@ public class ResponseScanModule implements Module {
                                     }
                                     if (hasSameTeacher) continue;
 
-                                    // 表示教师希望连接
-                                    SocketChannel channel = SocketChannel.open(
+                                    Teacher newTeacher = new Teacher(
                                             new InetSocketAddress(packet.getAddress(), Main.SCAN_PORT));
-                                    Teacher newTeacher = new Teacher(channel);
 
                                     for (NetworkCore core : Main.getCores()) {
                                         if (core.getAddr().equals(packet.getAddress())) {
-                                            core.addTeacher(newTeacher);
                                             log.debug("Added new teacher {} to core {}",
                                                     newTeacher.getIp(), packet.getAddress());
 
@@ -74,7 +71,8 @@ public class ResponseScanModule implements Module {
                                         }
                                     }
                                 }
-                            } catch (Exception ignored) {
+                            } catch (Exception e) {
+                                log.error("Error while handling request from {}", packet.getAddress(), e);
                             }
                         } catch (Exception e) {
                             log.error("Error while creating packet for {}", ipKey, e);
@@ -86,6 +84,8 @@ public class ResponseScanModule implements Module {
                 }
             });
         }
+
+        return null;
     }
 
     @Override

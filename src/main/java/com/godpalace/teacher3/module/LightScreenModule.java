@@ -2,12 +2,10 @@ package com.godpalace.teacher3.module;
 
 import com.godpalace.teacher3.Student;
 import com.godpalace.teacher3.manager.StudentManager;
+import io.netty.buffer.Unpooled;
 import javafx.scene.control.Button;
 import javafx.scene.image.Image;
 import lombok.extern.slf4j.Slf4j;
-
-import java.io.IOException;
-import java.nio.ByteBuffer;
 
 @Slf4j
 public class LightScreenModule implements Module {
@@ -37,11 +35,7 @@ public class LightScreenModule implements Module {
 
         button.setOnAction(e -> {
             for (Student student : StudentManager.getSelectedStudents()) {
-                try {
-                    sendRequest(student, ByteBuffer.allocate(0));
-                } catch (IOException ex) {
-                    log.error("学生{}闪屏失败", student.getName(), ex);
-                }
+                student.sendRequest(getID(), Unpooled.EMPTY_BUFFER);
             }
         });
 
@@ -61,14 +55,10 @@ public class LightScreenModule implements Module {
         }
 
         for (Student student : StudentManager.getSelectedStudents()) {
-            try {
-                sendRequest(student, ByteBuffer.allocate(0));
-            } catch (IOException ex) {
-                System.out.println("学生" + student.getName() + "闪屏失败");
-            }
-
-            System.out.println("闪屏完成!");
+            student.sendRequest(getID(), Unpooled.EMPTY_BUFFER);
         }
+
+        System.out.println("闪屏完成!");
     }
 
     @Override

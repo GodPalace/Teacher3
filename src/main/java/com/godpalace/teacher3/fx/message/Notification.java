@@ -15,7 +15,7 @@ public class Notification {
     private Notification() {
     }
 
-    public static void showNotification(String title, String message, ToastTypes type) {
+    public static void show(String title, String message, ToastTypes type) {
         if (toaster == null) {
             toaster = new ToastBarToasterService();
             toaster.initialize();

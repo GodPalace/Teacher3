@@ -1,7 +1,0 @@
-<component name="ProjectRunConfigurationManager">
-  <configuration default="false" name="TS(CMD)" type="CompoundRunConfigurationType">
-    <toRun name="Cmd Run" type="Application" />
-    <toRun name="Studnet Main" type="Application" />
-    <method v="2" />
-  </configuration>
-</component>

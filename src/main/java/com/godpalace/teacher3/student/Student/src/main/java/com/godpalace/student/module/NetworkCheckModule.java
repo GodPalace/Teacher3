@@ -2,12 +2,12 @@ package com.godpalace.student.module;
 
 import com.godpalace.student.Teacher;
 import com.godpalace.student.manager.ThreadPoolManager;
+import io.netty.buffer.ByteBuf;
 import lombok.extern.slf4j.Slf4j;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.net.NetworkInterface;
-import java.nio.ByteBuffer;
 import java.util.Enumeration;
 
 @Slf4j
@@ -23,7 +23,7 @@ public class NetworkCheckModule implements Module {
     }
 
     @Override
-    public void execute(Teacher teacher, ByteBuffer data) {
+    public ByteBuf execute(Teacher teacher, ByteBuf data) {
         ThreadPoolManager.getExecutor().execute(() -> {
             boolean isAlive;
 
@@ -65,6 +65,8 @@ public class NetworkCheckModule implements Module {
                 }
             }
         });
+
+        return null;
     }
 
     @Override

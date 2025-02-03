@@ -1,65 +1,111 @@
 package com.godpalace.student;
 
+import com.godpalace.student.manager.ThreadPoolManager;
+import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.*;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.compression.Lz4FrameDecoder;
+import io.netty.handler.codec.compression.Lz4FrameEncoder;
+import io.netty.util.ReferenceCountUtil;
 import lombok.Getter;
+import lombok.extern.slf4j.Slf4j;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.StandardSocketOptions;
-import java.nio.channels.SocketChannel;
 
+@Slf4j
+@Getter
 public class Teacher {
-    @Getter
-    private final SocketChannel channel;
-
-    @Getter
+    private final Channel channel;
     private final String ip;
 
-    private boolean isClosed = false;
+    public Teacher(InetSocketAddress target) throws InterruptedException {
+        EventLoopGroup group = ThreadPoolManager.getGroup();
+        Bootstrap bootstrap = new Bootstrap();
+        bootstrap.group(group)
+                .channel(NioSocketChannel.class)
+                .handler(new ChannelInitializer<SocketChannel>() {
+                    @Override
+                    protected void initChannel(SocketChannel ch) {
+                        ChannelPipeline pipeline = ch.pipeline();
 
-    public Teacher(SocketChannel channel) throws IOException {
-        this.channel = channel;
-        this.channel.setOption(StandardSocketOptions.TCP_NODELAY, true);
-        this.channel.setOption(StandardSocketOptions.SO_RCVBUF, 10240);
-        this.channel.setOption(StandardSocketOptions.SO_KEEPALIVE, true);
-        this.channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
-        this.channel.setOption(StandardSocketOptions.SO_LINGER, 5);
-        this.channel.socket().setSoTimeout(0);
-        this.channel.configureBlocking(false);
+                        pipeline.addLast(new Lz4FrameEncoder());
+                        pipeline.addLast(new Lz4FrameDecoder());
+                        pipeline.addLast(new ReaderHandler());
+                    }
+                });
 
-        this.ip = ((InetSocketAddress) channel.getRemoteAddress()).getAddress().getHostAddress();
+        channel = bootstrap.connect(target).sync().channel();
+        ip = ((InetSocketAddress) channel.remoteAddress()).getAddress().getHostAddress();
+
+        NetworkCore.getTeachers().add(this);
     }
 
-    public boolean isAlive() {
-        if (isClosed) return false;
+    public Teacher(Channel channel) {
+        channel.pipeline().addLast(new Lz4FrameEncoder());
+        channel.pipeline().addLast(new Lz4FrameDecoder());
+        channel.pipeline().addLast(new ReaderHandler());
 
-        try {
-            channel.socket().sendUrgentData(0xFF);
-            return true;
-        } catch (IOException e) {
-            return false;
+        this.channel = channel;
+        this.ip = ((InetSocketAddress) channel.remoteAddress()).getAddress().getHostAddress();
+
+        NetworkCore.getTeachers().add(this);
+    }
+
+    class ReaderHandler extends ChannelInboundHandlerAdapter {
+        @Override
+        public void channelRead(ChannelHandlerContext ctx, Object msg) {
+            if (msg instanceof ByteBuf buf) {
+                CommandHandler.handleCommand(Teacher.this, buf.retain());
+                ReferenceCountUtil.release(buf);
+            }
+        }
+
+        @Override
+        public void channelInactive(ChannelHandlerContext ctx) {
+            NetworkCore.getTeachers().remove(Teacher.this);
+            log.debug("Teacher {} disconnected", ip);
+        }
+
+        @Override
+        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+            log.error("Teacher {} disconnected due to exception", ip);
+            ctx.close();
         }
     }
 
-    public void close() throws IOException {
-        if (isClosed) return;
+    public void sendResponse(short id, short timestamp, ByteBuf buf) {
+        ByteBuf dataBuf = Unpooled.buffer(4 + buf.readableBytes());
+        dataBuf.writeShort(id);
+        dataBuf.writeShort(timestamp);
+        dataBuf.writeBytes(buf);
 
-        isClosed = true;
-        channel.close();
+        channel.writeAndFlush(dataBuf);
+    }
+
+    public boolean isAlive() {
+        return channel.isOpen();
+    }
+
+    public void close() {
+        if (channel.isOpen()) {
+            channel.close();
+        }
     }
 
     public boolean isClosed() {
-        return isClosed;
+        return !channel.isOpen();
     }
 
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof Teacher teacher) {
-            try {
-                return ((InetSocketAddress) this.getChannel().getRemoteAddress()).getAddress()
-                        .equals(((InetSocketAddress) teacher.getChannel().getRemoteAddress()).getAddress());
-            } catch (IOException e) {
-                return false;
-            }
+            return ((InetSocketAddress) this.getChannel().remoteAddress())
+                    .getAddress()
+                    .equals(((InetSocketAddress) teacher.getChannel().remoteAddress())
+                            .getAddress());
         } else {
             return false;
         }

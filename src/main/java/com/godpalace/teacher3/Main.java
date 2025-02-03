@@ -61,9 +61,6 @@ public class Main {
             }
         }
 
-        // Initialize the Listener
-        NetworkListener.manage();
-
         // Initialize modules
         ModuleManager.initialize();
     }

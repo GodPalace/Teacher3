@@ -2,9 +2,9 @@ package com.godpalace.student.module;
 
 import com.godpalace.student.Teacher;
 import com.godpalace.student.util.DialogUtil;
+import io.netty.buffer.ByteBuf;
 
 import java.awt.*;
-import java.nio.ByteBuffer;
 
 public class MessageModule implements Module{
     @Override
@@ -18,12 +18,17 @@ public class MessageModule implements Module{
     }
 
     @Override
-    public void execute(Teacher teacher, ByteBuffer data) throws Exception {
+    public ByteBuf execute(Teacher teacher, ByteBuf data) throws Exception {
+        byte[] bytes = new byte[data.readableBytes()];
+        data.readBytes(bytes);
+
         DialogUtil.showMessage(
-                new String(data.array(), "GB2312"),
+                new String(bytes),
                 Color.BLACK, Color.WHITE,
                 new Font("Arial", Font.PLAIN, 16),
                 3000);
+
+        return null;
     }
 
     @Override

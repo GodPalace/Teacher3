@@ -5,6 +5,7 @@
     <option name="MAIN_CLASS_NAME" value="com.godpalace.teacher3.Main" />
     <module name="Teacher3" />
     <option name="PROGRAM_PARAMETERS" value="-c" />
+    <option name="VM_PARAMETERS" value="-Dio.netty.tryReflectionSetAccessible=true --add-opens java.base/jdk.internal.reflect=ALL-UNNAMED --add-opens java.base/jdk.internal.misc=ALL-UNNAMED --add-opens java.base/java.nio=ALL-UNNAMED" />
     <method v="2">
       <option name="Make" enabled="true" />
     </method>

@@ -2,6 +2,7 @@
   <configuration default="false" name="Studnet Main" type="Application" factoryName="Application">
     <option name="MAIN_CLASS_NAME" value="com.godpalace.student.Main" />
     <module name="Student" />
+    <option name="VM_PARAMETERS" value="-Dio.netty.tryReflectionSetAccessible=true --add-opens java.base/jdk.internal.reflect=ALL-UNNAMED --add-opens java.base/jdk.internal.misc=ALL-UNNAMED --add-opens java.base/java.nio=ALL-UNNAMED" />
     <extension name="coverage">
       <pattern>
         <option name="PATTERN" value="com.godpalace.student.manager.*" />

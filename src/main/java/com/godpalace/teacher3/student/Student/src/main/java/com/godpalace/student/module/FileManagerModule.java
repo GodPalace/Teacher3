@@ -1,15 +1,22 @@
 package com.godpalace.student.module;
 
 import com.godpalace.student.Teacher;
+import com.godpalace.student.manager.ThreadPoolManager;
+import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.*;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.compression.Lz4FrameDecoder;
+import io.netty.handler.codec.compression.Lz4FrameEncoder;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.ObjectOutputStream;
-import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
-import java.nio.channels.SocketChannel;
 import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
 import java.util.zip.GZIPOutputStream;
@@ -54,309 +61,365 @@ public class FileManagerModule implements Module {
     }
 
     @Override
-    public void execute(Teacher teacher, ByteBuffer data) throws Exception {
-        short command = data.getShort();
+    public ByteBuf execute(Teacher teacher, ByteBuf data) {
+        short command = data.readShort();
 
         // 响应数据
         short response = SUCCESS;
-        ByteArrayOutputStream responseBytes = new ByteArrayOutputStream();
+        ByteBuf responseBytes = Unpooled.buffer();
 
-        switch (command) {
-            case CHECK_EXIST -> {
-                int pathLength = data.getInt();
-                byte[] pathBytes = new byte[pathLength];
-                data.get(pathBytes);
-                String path = new String(pathBytes);
+        try {
+            switch (command) {
+                case CHECK_EXIST -> {
+                    byte[] pathBytes = new byte[data.readableBytes()];
+                    data.readBytes(pathBytes);
+                    String path = new String(pathBytes);
 
-                File file = new File(path);
-                if (file.exists()) {
-                    responseBytes.write(1);
-                } else {
-                    responseBytes.write(0);
+                    File file = new File(path);
+                    responseBytes.writeBoolean(file.exists());
                 }
-            }
 
-            case CHECK_FILE -> {
-                int pathLength = data.getInt();
-                byte[] pathBytes = new byte[pathLength];
-                data.get(pathBytes);
-                String path = new String(pathBytes);
+                case CHECK_FILE -> {
+                    byte[] pathBytes = new byte[data.readableBytes()];
+                    data.readBytes(pathBytes);
+                    String path = new String(pathBytes);
 
-                File file = new File(path);
-                if (file.exists()) {
-                    if (file.isFile()) {
-                        responseBytes.write(1);
+                    File file = new File(path);
+                    if (file.exists()) {
+                        responseBytes.writeBoolean(file.isFile());
                     } else {
-                        responseBytes.write(0);
+                        response = ERROR_NOT_FOUND_FILE;
+                        log.info("Not found file: {}", path);
                     }
-                } else {
-                    response = ERROR_NOT_FOUND_FILE;
-                    log.info("Not found file: {}", path);
                 }
-            }
 
-            case LIST_FILES -> {
-                int pathLength = data.getInt();
-                byte[] pathBytes = new byte[pathLength];
-                data.get(pathBytes);
-                String path = new String(pathBytes);
+                case LIST_FILES -> {
+                    byte[] pathBytes = new byte[data.readableBytes()];
+                    data.readBytes(pathBytes);
+                    String path = new String(pathBytes);
 
-                File file = new File(path);
-                if (file.exists()) {
-                    if (file.isDirectory()) {
-                        File[] files = (path.equals(File.separator)?
-                                File.listRoots() : file.listFiles());
-                        int count = (files == null ? 0 : files.length);
+                    File file = new File(path);
+                    if (file.exists()) {
+                        if (file.isDirectory()) {
+                            File[] files = (path.equals(File.separator) ?
+                                    File.listRoots() : file.listFiles());
+                            int count = (files == null ? 0 : files.length);
+                            responseBytes.writeInt(count);
 
-                        byte[] countBytes = ByteBuffer.allocate(4).putInt(count).array();
-                        responseBytes.write(countBytes);
+                            ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
+                            GZIPOutputStream gzipOut = new GZIPOutputStream(byteOut);
+                            ObjectOutputStream objOut = new ObjectOutputStream(gzipOut);
 
-                        GZIPOutputStream gzipOut = new GZIPOutputStream(responseBytes);
-                        ObjectOutputStream objOut = new ObjectOutputStream(gzipOut);
+                            for (int i = 0; i < count; i++) {
+                                objOut.writeObject(files[i]);
+                            }
 
-                        for (int i = 0; i < count; i++) {
-                            objOut.writeObject(files[i]);
+                            objOut.flush();
+                            gzipOut.finish();
+                            gzipOut.flush();
+                            byteOut.flush();
+
+                            responseBytes.writeBytes(byteOut.toByteArray());
+
+                            objOut.close();
+                            gzipOut.close();
+                            byteOut.close();
+                        } else {
+                            response = ERROR_INVALID_PATH;
+                            log.info("Not a directory: {}", path);
                         }
-
-                        objOut.flush();
-                        gzipOut.finish();
-                        gzipOut.flush();
-
-                        objOut.close();
-                        gzipOut.close();
                     } else {
-                        response = ERROR_INVALID_PATH;
-                        log.info("Not a directory: {}", path);
-                    }
-                } else {
-                    response = ERROR_NOT_FOUND_PATH;
-                    log.info("Not found directory: {}", path);
-                }
-            }
-
-            case NEW_FILE -> {
-                int pathLength = data.getInt();
-                byte[] pathBytes = new byte[pathLength];
-                data.get(pathBytes);
-                String path = new String(pathBytes);
-
-                File file = new File(path);
-                if (file.exists()) {
-                    response = ERROR_INVALID_FILE;
-                    log.info("File already exists: {}", path);
-                } else {
-                    boolean success = file.createNewFile();
-
-                    if (success) {
-                        log.info("New file created: {}", path);
-                    } else {
-                        response = ERROR_CREATE_FILE;
-                        log.info("Failed to create file: {}", path);
+                        response = ERROR_NOT_FOUND_PATH;
+                        log.info("Not found directory: {}", path);
                     }
                 }
-            }
 
-            case NEW_DIRECTORY -> {
-                int pathLength = data.getInt();
-                byte[] pathBytes = new byte[pathLength];
-                data.get(pathBytes);
-                String path = new String(pathBytes);
+                case NEW_FILE -> {
+                    byte[] pathBytes = new byte[data.readableBytes()];
+                    data.readBytes(pathBytes);
+                    String path = new String(pathBytes);
 
-                File file = new File(path);
-                if (file.exists()) {
-                    response = ERROR_INVALID_PATH;
-                    log.info("Path already exists: {}", path);
-                } else {
-                    boolean success = file.mkdirs();
-
-                    if (success) {
-                        log.info("New directory created: {}", path);
-                    } else {
-                        response = ERROR_CREATE_FILE;
-                        log.info("Failed to create directory: {}", path);
-                    }
-                }
-            }
-
-            case DELETE_FILE -> {
-                int pathLength = data.getInt();
-                byte[] pathBytes = new byte[pathLength];
-                data.get(pathBytes);
-                String path = new String(pathBytes);
-
-                File file = new File(path);
-                if (file.exists()) {
-                    boolean success = file.delete();
-
-                    if (success) {
-                        log.info("File deleted: {}", path);
-                    } else {
-                        response = ERROR_DELETE_FILE;
-                        log.info("Failed to delete file: {}", path);
-                    }
-                } else {
-                    response = ERROR_NOT_FOUND_FILE;
-                    log.info("Not found file: {}", path);
-                }
-            }
-
-            case RENAME_FILE -> {
-                int oldPathLength = data.getInt();
-                byte[] oldPathBytes = new byte[oldPathLength];
-                data.get(oldPathBytes);
-                String oldPath = new String(oldPathBytes);
-
-                int newPathLength = data.getInt();
-                byte[] newPathBytes = new byte[newPathLength];
-                data.get(newPathBytes);
-                String newPath = new String(newPathBytes);
-
-                File oldFile = new File(oldPath);
-                if (oldFile.exists()) {
-                    File newFile = new File(newPath);
-
-                    if (newFile.exists()) {
+                    File file = new File(path);
+                    if (file.exists()) {
                         response = ERROR_INVALID_FILE;
-                        log.info("File already exists: {}", newPath);
+                        log.info("File already exists: {}", path);
                     } else {
-                        boolean success = oldFile.renameTo(newFile);
+                        boolean success = file.createNewFile();
 
                         if (success) {
-                            log.info("File renamed: {} -> {}", oldPath, newPath);
+                            log.info("New file created: {}", path);
                         } else {
-                            response = ERROR_RENAME_FILE;
-                            log.info("Failed to rename file: {} -> {}", oldPath, newPath);
+                            response = ERROR_CREATE_FILE;
+                            log.info("Failed to create file: {}", path);
                         }
                     }
-                } else {
-                    response = ERROR_NOT_FOUND_FILE;
-                    log.info("Not found file: {}", oldPath);
-                }
-            }
-
-            case UPLOAD_FILE -> {
-                int pathLength = data.getInt();
-                byte[] pathBytes = new byte[pathLength];
-                data.get(pathBytes);
-                String path = new String(pathBytes);
-
-                File file = new File(path);
-                file.createNewFile();
-
-                String ip = teacher.getIp();
-                int port = data.getInt();
-
-                Thread.sleep(1000);
-                SocketChannel channel = SocketChannel.open(
-                        new InetSocketAddress(ip, port));
-                FileChannel fileChannel = FileChannel.open(file.toPath(),
-                        StandardOpenOption.WRITE);
-
-                ByteBuffer buffer = ByteBuffer.allocate(1024);
-                while (channel.read(buffer) != -1) {
-                    buffer.flip();
-                    fileChannel.write(buffer);
-                    buffer.clear();
                 }
 
-                fileChannel.close();
-                channel.close();
-                return;
-            }
+                case NEW_DIRECTORY -> {
+                    byte[] pathBytes = new byte[data.readableBytes()];
+                    data.readBytes(pathBytes);
+                    String path = new String(pathBytes);
 
-            case DOWNLOAD_FILE -> {
-                int pathLength = data.getInt();
-                byte[] pathBytes = new byte[pathLength];
-                data.get(pathBytes);
-                String path = new String(pathBytes);
-
-                File file = new File(path);
-                file.createNewFile();
-
-                String ip = teacher.getIp();
-                int port = data.getInt();
-
-                Thread.sleep(1000);
-                SocketChannel channel = SocketChannel.open(
-                        new InetSocketAddress(ip, port));
-                FileChannel fileChannel = FileChannel.open(file.toPath(),
-                        StandardOpenOption.READ);
-
-                ByteBuffer buffer = ByteBuffer.allocate(1024);
-                while (fileChannel.read(buffer) != -1) {
-                    buffer.flip();
-                    channel.write(buffer);
-                    buffer.clear();
-                }
-
-                fileChannel.close();
-                channel.close();
-                file.delete();
-                return;
-            }
-
-            case LOCK_FILE -> {
-                int pathLength = data.getInt();
-                byte[] pathBytes = new byte[pathLength];
-                data.get(pathBytes);
-                String path = new String(pathBytes);
-
-                if (new File(path).exists()) {
-                    long ptr = LockFile(path);
-
-                    if (ptr == 0) {
-                        response = ERROR_LOCK_FILE;
-                        log.info("Failed to lock file: {}", path);
+                    File file = new File(path);
+                    if (file.exists()) {
+                        response = ERROR_INVALID_PATH;
+                        log.info("Path already exists: {}", path);
                     } else {
-                        ptrs.put(path, ptr);
-                        log.info("File locked: {}", path);
-                    }
-                } else {
-                    response = ERROR_NOT_FOUND_FILE;
-                    log.info("Not found file: {}", path);
-                }
-            }
+                        boolean success = file.mkdirs();
 
-            case UNLOCK_FILE -> {
-                int pathLength = data.getInt();
-                byte[] pathBytes = new byte[pathLength];
-                data.get(pathBytes);
-                String path = new String(pathBytes);
-
-                if (ptrs.containsKey(path)) {
-                    if (new File(path).exists()) {
-                        if (!UnlockFile(ptrs.get(path))) {
-                            response = ERROR_LOCK_FILE;
-                            log.info("Failed to unlock file: {}", path);
+                        if (success) {
+                            log.info("New directory created: {}", path);
                         } else {
-                            ptrs.remove(path);
-                            log.info("File unlocked: {}", path);
+                            response = ERROR_CREATE_FILE;
+                            log.info("Failed to create directory: {}", path);
+                        }
+                    }
+                }
+
+                case DELETE_FILE -> {
+                    byte[] pathBytes = new byte[data.readableBytes()];
+                    data.readBytes(pathBytes);
+                    String path = new String(pathBytes);
+
+                    File file = new File(path);
+                    if (file.exists()) {
+                        boolean success = file.delete();
+
+                        if (success) {
+                            log.info("File deleted: {}", path);
+                        } else {
+                            response = ERROR_DELETE_FILE;
+                            log.info("Failed to delete file: {}", path);
                         }
                     } else {
                         response = ERROR_NOT_FOUND_FILE;
                         log.info("Not found file: {}", path);
                     }
-                } else {
-                    response = ERROR_INVALID_FILE;
-                    log.info("File not locked: {}", path);
                 }
-            }
 
-            default -> log.info("Unknown command: {}", command);
+                case RENAME_FILE -> {
+                    int oldPathLength = data.readInt();
+                    byte[] oldPathBytes = new byte[oldPathLength];
+                    data.readBytes(oldPathBytes);
+                    String oldPath = new String(oldPathBytes);
+
+                    int newPathLength = data.readInt();
+                    byte[] newPathBytes = new byte[newPathLength];
+                    data.readBytes(newPathBytes);
+                    String newPath = new String(newPathBytes);
+
+                    File oldFile = new File(oldPath);
+                    if (oldFile.exists()) {
+                        File newFile = new File(newPath);
+
+                        if (newFile.exists()) {
+                            response = ERROR_INVALID_FILE;
+                            log.info("File already exists: {}", newPath);
+                        } else {
+                            boolean success = oldFile.renameTo(newFile);
+
+                            if (success) {
+                                log.info("File renamed: {} -> {}", oldPath, newPath);
+                            } else {
+                                response = ERROR_RENAME_FILE;
+                                log.info("Failed to rename file: {} -> {}", oldPath, newPath);
+                            }
+                        }
+                    } else {
+                        response = ERROR_NOT_FOUND_FILE;
+                        log.info("Not found file: {}", oldPath);
+                    }
+                }
+
+                case UPLOAD_FILE -> {
+                    int pathLength = data.readInt();
+                    byte[] pathBytes = new byte[pathLength];
+                    data.readBytes(pathBytes);
+                    String path = new String(pathBytes);
+
+                    File file = new File(path);
+                    if (file.exists()) file.delete();
+                    file.createNewFile();
+
+                    String ip = teacher.getIp();
+                    int port = data.readInt();
+
+                    EventLoopGroup group = ThreadPoolManager.getGroup();
+                    Bootstrap bootstrap = new Bootstrap();
+                    bootstrap.group(group)
+                            .channel(NioSocketChannel.class)
+                            .handler(new ChannelInitializer<SocketChannel>() {
+                                @Override
+                                protected void initChannel(SocketChannel ch) {
+                                    ChannelPipeline pipeline = ch.pipeline();
+
+                                    pipeline.addLast(new Lz4FrameDecoder());
+                                    pipeline.addLast(new UploadFileHandler(file));
+                                }
+                            });
+                    bootstrap.connect(ip, port).sync();
+
+                    responseBytes.release();
+                    return null;
+                }
+
+                case DOWNLOAD_FILE -> {
+                    int pathLength = data.readInt();
+                    byte[] pathBytes = new byte[pathLength];
+                    data.readBytes(pathBytes);
+                    String path = new String(pathBytes);
+
+                    File file = new File(path);
+                    if (!file.exists()) file.createNewFile();
+
+                    String ip = teacher.getIp();
+                    int port = data.readInt();
+
+                    EventLoopGroup group = ThreadPoolManager.getGroup();
+                    Bootstrap bootstrap = new Bootstrap();
+                    bootstrap.group(group)
+                            .channel(NioSocketChannel.class)
+                            .handler(new ChannelInitializer<SocketChannel>() {
+                                @Override
+                                protected void initChannel(SocketChannel ch) {
+                                    ChannelPipeline pipeline = ch.pipeline();
+
+                                    pipeline.addLast(new Lz4FrameEncoder());
+                                    pipeline.addLast(new DownloadFileHandler(file));
+                                }
+                            });
+                    bootstrap.connect(ip, port).sync();
+
+                    responseBytes.release();
+                    return null;
+                }
+
+                case LOCK_FILE -> {
+                    byte[] pathBytes = new byte[data.readableBytes()];
+                    data.readBytes(pathBytes);
+                    String path = new String(pathBytes);
+
+                    if (new File(path).exists()) {
+                        long ptr = LockFile(path);
+
+                        if (ptr == 0) {
+                            response = ERROR_LOCK_FILE;
+                            log.info("Failed to lock file: {}", path);
+                        } else {
+                            ptrs.put(path, ptr);
+                            log.info("File locked: {}", path);
+                        }
+                    } else {
+                        response = ERROR_NOT_FOUND_FILE;
+                        log.info("Not found file: {}", path);
+                    }
+                }
+
+                case UNLOCK_FILE -> {
+                    byte[] pathBytes = new byte[data.readableBytes()];
+                    data.readBytes(pathBytes);
+                    String path = new String(pathBytes);
+
+                    if (ptrs.containsKey(path)) {
+                        if (new File(path).exists()) {
+                            if (!UnlockFile(ptrs.get(path))) {
+                                response = ERROR_LOCK_FILE;
+                                log.info("Failed to unlock file: {}", path);
+                            } else {
+                                ptrs.remove(path);
+                                log.info("File unlocked: {}", path);
+                            }
+                        } else {
+                            response = ERROR_NOT_FOUND_FILE;
+                            log.info("Not found file: {}", path);
+                        }
+                    } else {
+                        response = ERROR_INVALID_FILE;
+                        log.info("File not locked: {}", path);
+                    }
+                }
+
+                default -> log.info("Unknown command: {}", command);
+            }
+        } catch (Exception e) {
+            log.error("Failed to execute command: {}", command, e);
         }
 
         // 发送响应数据
-        responseBytes.flush();
-        ByteBuffer responseData = ByteBuffer.allocate(2 + responseBytes.size());
-        responseData.putShort(response);
-        responseData.put(responseBytes.toByteArray());
-        responseData.flip();
-        sendResponseWithSize(teacher.getChannel(), responseData);
-        responseBytes.close();
+        ByteBuf responseData = Unpooled.buffer(2 + responseBytes.readableBytes());
+        responseData.writeShort(response);
+        responseData.writeBytes(responseBytes);
+        responseBytes.release();
+
+        return responseData;
     }
 
     @Override
     public boolean isLocalModule() {
         return false;
+    }
+
+    // 接收上传的文件
+    static class UploadFileHandler extends ChannelInboundHandlerAdapter {
+        private final File outFile;
+        private FileChannel outChannel;
+
+        public UploadFileHandler(File outFile) {
+            this.outFile = outFile;
+        }
+
+        @Override
+        public void channelActive(ChannelHandlerContext ctx) throws Exception {
+            outChannel = FileChannel.open(outFile.toPath(),
+                    StandardOpenOption.WRITE, StandardOpenOption.CREATE);
+        }
+
+        @Override
+        public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
+            if (msg instanceof ByteBuf buf) {
+                outChannel.write(buf.nioBuffer());
+            }
+        }
+
+        @Override
+        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+            log.error("Exception caught in UploadFileHandler", cause);
+            ctx.close();
+        }
+    }
+
+    // 发送下载的文件
+    static class DownloadFileHandler extends ChannelInboundHandlerAdapter {
+        private final File inFile;
+
+        public DownloadFileHandler(File inFile) {
+            this.inFile = inFile;
+        }
+
+        @Override
+        public void channelActive(ChannelHandlerContext ctx) {
+            try {
+                FileChannel inChannel = FileChannel.open(inFile.toPath(), StandardOpenOption.READ);
+
+                ByteBuffer buffer = ByteBuffer.allocate(10240);
+                while (inChannel.read(buffer) != -1) {
+                    buffer.flip();
+                    ctx.writeAndFlush(Unpooled.wrappedBuffer(buffer));
+                    buffer.clear();
+                }
+
+                inChannel.close();
+            } catch (Exception e) {
+                log.error("Failed to send file", e);
+            } finally {
+                ctx.close();
+            }
+        }
+
+        @Override
+        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+            log.error("Exception caught in DownloadFileHandler", cause);
+            ctx.close();
+        }
     }
 }

@@ -14,7 +14,7 @@ public class TeacherDatabase {
             new File("C:\\Users\\Public\\.godpalace\\teacher3").mkdirs();
 
             FileDatabaseEngine.init(TeacherDatabase.class, null);
-            log.info("Database initialized");
+            log.debug("Database initialized");
         } catch (Exception e) {
             log.error("Error initializing database", e);
         }

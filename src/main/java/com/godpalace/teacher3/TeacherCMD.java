@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.PrintStream;
+import java.util.LinkedList;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 import java.util.concurrent.ConcurrentHashMap;
@@ -51,13 +52,29 @@ public class TeacherCMD {
                 String input = scanner.nextLine().trim();
                 if (input.isEmpty()) continue;
 
-                int index = input.indexOf(" ");
-                String cmd = input;
-                if (index > 0) cmd = input.substring(0, index);
+                String[] doubleMarks = input.split("\"");
+                if (doubleMarks.length % 2 == (input.endsWith("\"")? 1 : 0)) {
+                    System.out.println("命令格式错误: 缺少双引号");
+                    continue;
+                }
 
-                String[] args = new String[0];
-                if (input.indexOf(" ") > 0)
-                    args = input.substring(input.indexOf(" ") + 1).split(" ");
+                LinkedList<String> argsList = new LinkedList<>();
+                for (int i = 0; i < doubleMarks.length; i++) {
+                    if (i % 2 == 0) {
+                        String arg = doubleMarks[i].trim();
+                        if (arg.isEmpty()) continue;
+
+                        String[] args = arg.split(" ");
+                        for (String s : args) {
+                            if (!s.isEmpty()) argsList.add(s);
+                        }
+                    } else {
+                        argsList.add(doubleMarks[i]);
+                    }
+                }
+
+                String cmd = argsList.removeFirst();
+                String[] args = argsList.toArray(new String[0]);
 
                 switch (cmd) {
                     case "help" -> {

@@ -1,132 +1,74 @@
 package com.godpalace.student;
 
-import com.godpalace.student.manager.ThreadPoolManager;
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.*;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.IOException;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
-import java.nio.channels.*;
-import java.util.ArrayList;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 @Slf4j
 public class NetworkCore {
-    private static final Selector allSelector;
-
-    static {
-        try {
-            allSelector = Selector.open();
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     @Getter
-    private static final ArrayList<Teacher> teachers = new ArrayList<>();
+    private static final CopyOnWriteArrayList<Teacher> teachers = new CopyOnWriteArrayList<>();
 
     @Getter
     private final InetAddress addr;
-    private final Selector selector;
-    private final ServerSocketChannel positiveServerChannel;
 
-    private boolean isClosed = false;
+    @Getter
+    private final int port;
 
-    public NetworkCore(InetAddress addr, int port) throws IOException {
-        InetSocketAddress address = new InetSocketAddress(addr, port);
+    private final EventLoopGroup acceptorGroup = new NioEventLoopGroup(1);
+    private final EventLoopGroup acceptorWorkerGroup = new NioEventLoopGroup();
+
+    public NetworkCore(InetAddress addr, int port) {
         this.addr = addr;
-
-        positiveServerChannel = ServerSocketChannel.open();
-        positiveServerChannel.configureBlocking(false);
-        positiveServerChannel.bind(address);
-        positiveServerChannel.register(allSelector, SelectionKey.OP_ACCEPT).attach(this);
-        selector = Selector.open();
-    }
-
-    public static void manage() {
-        ThreadPoolManager.getExecutor().execute(() -> {
-            while (true) {
-                try {
-                    allSelector.select();
-
-                    for (SelectionKey key : allSelector.selectedKeys()) {
-                        if (key.isAcceptable()) {
-                            NetworkCore core = (NetworkCore) key.attachment();
-
-                            SocketChannel channel;
-                            while ((channel = core.positiveServerChannel.accept()) == null) {
-                                Thread.yield();
-                            }
-
-                            Teacher teacher = new Teacher(channel);
-
-                            core.addTeacher(teacher);
-                            log.info("New teacher connected: {}", channel.getRemoteAddress());
-                        }
-                    }
-
-                    allSelector.selectedKeys().clear();
-                } catch (IOException e) {
-                    log.error("Error while managing selector", e);
-                    break;
-                }
-            }
-        });
+        this.port = port;
     }
 
     public void start() {
-        new Thread(this::runReceiver).start();
-    }
+        ServerBootstrap bootstrap = new ServerBootstrap();
+        bootstrap.group(acceptorGroup, acceptorWorkerGroup)
+                .channel(NioServerSocketChannel.class)
+                .childHandler(new ChannelInitializer<SocketChannel>() {
+                    @Override
+                    protected void initChannel(SocketChannel ch) {
+                        ChannelPipeline pipeline = ch.pipeline();
 
-    public void addTeacher(Teacher teacher) throws ClosedChannelException {
-        teachers.add(teacher);
-        teacher.getChannel()
-                .register(selector, SelectionKey.OP_READ)
-                .attach(teacher);
-    }
-
-    public static void removeTeacher(Teacher teacher) throws IOException {
-        teachers.remove(teacher);
-        teacher.close();
-    }
-
-    private void runReceiver() {
-        while (!isClosed) {
-            try {
-                selector.select(1000);
-
-                for (SelectionKey key : selector.selectedKeys()) {
-                    Teacher teacher = (Teacher) key.attachment();
-
-                    if (key.isReadable()) {
-                        if (!teacher.isAlive()) {
-                            removeTeacher(teacher);
-                            continue;
-                        }
-
-                        try {
-                            CommandHandler.handleCommand(teacher);
-                        } catch (Exception e) {
-                            log.error("Error while handling command", e);
-                            selector.selectedKeys().remove(key);
-                        }
+                        pipeline.addLast("Acceptor", new AcceptorHandler());
                     }
-                }
+                })
+                .childOption(ChannelOption.SO_KEEPALIVE, true);
 
-                selector.selectedKeys().clear();
-            } catch (Exception e) {
-                log.error("Error while running receiver", e);
-            }
+        bootstrap.bind(addr, port).syncUninterruptibly();
+    }
+
+    static class AcceptorHandler extends ChannelInboundHandlerAdapter {
+        @Override
+        public void channelActive(ChannelHandlerContext ctx) throws Exception {
+            Teacher teacher = new Teacher(ctx.channel());
+
+            log.info("New teacher connected: {}", teacher.getIp());
+            super.channelActive(ctx);
+        }
+
+        @Override
+        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+            log.error("Exception caught in AcceptorHandler", cause);
+            ctx.close();
         }
     }
 
-    public void close() throws IOException {
-        isClosed = true;
-        positiveServerChannel.close();
-        selector.close();
+    public void close() {
+        acceptorGroup.shutdownGracefully();
+        acceptorWorkerGroup.shutdownGracefully();
     }
 
     public boolean isClosed() {
-        return isClosed;
+        return acceptorGroup.isShutdown() && acceptorWorkerGroup.isShutdown();
     }
 }

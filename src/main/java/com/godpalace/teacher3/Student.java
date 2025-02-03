@@ -3,32 +3,37 @@ package com.godpalace.teacher3;
 import com.godpalace.teacher3.manager.ModuleManager;
 import com.godpalace.teacher3.manager.StudentManager;
 import com.godpalace.teacher3.manager.ThreadPoolManager;
-import javafx.application.Platform;
-import javafx.scene.control.Alert;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.ChannelPipeline;
+import io.netty.handler.codec.compression.Lz4FrameDecoder;
+import io.netty.handler.codec.compression.Lz4FrameEncoder;
 import lombok.Getter;
-import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.kordamp.ikonli.boxicons.BoxiconsRegular;
-import org.kordamp.ikonli.javafx.FontIcon;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.StandardSocketOptions;
-import java.nio.channels.SocketChannel;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 @Slf4j
 public class Student {
-    @Setter
     @Getter
-    private static int idCounter = 0;
+    private static final AtomicInteger idCounter = new AtomicInteger(0);
 
     @Getter
-    private final SocketChannel channel;
-    private boolean isClosed = false;
+    private final Channel channel;
 
+    @Getter
+    private final ConcurrentHashMap<Short, ConcurrentHashMap<Short, ByteBuf>> responses = new ConcurrentHashMap<>();
     private final AtomicReference<String> name = new AtomicReference<>("...");
+
+    @Getter
+    private final AtomicBoolean[] statuses = new AtomicBoolean[ModuleManager.getModules().size() + 1];
 
     @Getter
     private final String ip;
@@ -39,50 +44,53 @@ public class Student {
     @Getter
     private final int id;
 
-    @Getter
-    private final AtomicBoolean[] status;
-
-    public Student(SocketChannel channel) throws IOException {
+    public Student(Channel channel) {
+        ChannelPipeline pipeline = channel.pipeline();
+        pipeline.addLast(new Lz4FrameEncoder());
+        pipeline.addLast(new Lz4FrameDecoder());
+        pipeline.addLast(new Student.ReadHandler());
         this.channel = channel;
-        this.channel.setOption(StandardSocketOptions.TCP_NODELAY, true);
-        this.channel.setOption(StandardSocketOptions.SO_RCVBUF, 10240);
-        this.channel.setOption(StandardSocketOptions.SO_KEEPALIVE, true);
-        this.channel.setOption(StandardSocketOptions.SO_REUSEADDR, true);
-        this.channel.setOption(StandardSocketOptions.SO_LINGER, 5);
-        this.channel.socket().setSoTimeout(0);
-        this.channel.configureBlocking(false);
 
         ThreadPoolManager.getExecutor().execute(() -> {
-            try {
-                name.set(((InetSocketAddress) channel.getRemoteAddress()).getAddress().getHostName());
+            name.set(((InetSocketAddress) channel.remoteAddress()).getAddress().getHostName());
 
-                if (!Main.isRunOnCmd()) {
-                    if (StudentManager.getStudentTable() != null) {
-                        StudentManager.getStudentTable().refresh();
-                    }
-                }
-            } catch (IOException e) {
-                if (Main.isRunOnCmd()) {
-                    System.out.println("Get name error, caused by: " + e.getMessage());
-                } else {
-                    Platform.runLater(() -> {
-                        Alert alert = new Alert(Alert.AlertType.ERROR);
-                        alert.setGraphic(new FontIcon(BoxiconsRegular.ERROR));
-                        alert.setTitle("错误");
-                        alert.setHeaderText("获取学生名失败");
-                        alert.setContentText("原因: " + e.getMessage());
-                        alert.showAndWait();
-                    });
+            if (!Main.isRunOnCmd()) {
+                if (StudentManager.getStudentTable() != null) {
+                    StudentManager.getStudentTable().refresh();
                 }
             }
         });
 
-        ip = ((InetSocketAddress) channel.getRemoteAddress()).getAddress().getHostAddress();
-        port = ((InetSocketAddress) channel.getRemoteAddress()).getPort();
+        ip = ((InetSocketAddress) channel.remoteAddress()).getAddress().getHostAddress();
+        port = ((InetSocketAddress) channel.remoteAddress()).getPort();
 
-        status = new AtomicBoolean[ModuleManager.getModules().size() + 1];
-        for (int i = 0; i < status.length; i++) status[i] = new AtomicBoolean(false);
-        id = idCounter++;
+        for (int i = 0; i < statuses.length; i++) statuses[i] = new AtomicBoolean(false);
+        id = idCounter.getAndIncrement();
+    }
+
+    public short sendRequest(short id, ByteBuf buf) {
+        if (channel.isActive()) {
+            short timestamp = (short) Math.abs(System.nanoTime() % 65536);
+            byte[] bytes = buf.array();
+
+            ByteBuf data = Unpooled.buffer(4 + bytes.length);
+            data.writeShort(id);
+            data.writeShort(timestamp);
+            data.writeBytes(bytes);
+            channel.writeAndFlush(data);
+
+            return timestamp;
+        } else {
+            throw new IllegalStateException("Channel is not active");
+        }
+    }
+
+    public boolean getStatuses(int id) {
+        return statuses[id].get();
+    }
+
+    public void setStatuses(int id, boolean status) {
+        this.statuses[id].set(status);
     }
 
     public String getName() {
@@ -90,36 +98,24 @@ public class Student {
     }
 
     public boolean isAlive() {
-        if (isClosed) return false;
+        return channel.isOpen();
+    }
 
-        try {
-            channel.socket().sendUrgentData(0xFF);
-            return true;
-        } catch (IOException e) {
-            return false;
+    public void close() {
+        if (channel.isOpen()) {
+            channel.close();
         }
     }
 
-    public void close() throws IOException {
-        if (isClosed) return;
-
-        isClosed = true;
-        channel.close();
-    }
-
     public boolean isClosed() {
-        return isClosed;
+        return !channel.isOpen();
     }
 
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof Student student) {
-            try {
-                return ((InetSocketAddress) this.getChannel().getRemoteAddress()).getAddress()
-                        .equals(((InetSocketAddress) student.getChannel().getRemoteAddress()).getAddress());
-            } catch (IOException e) {
-                return false;
-            }
+            return ((InetSocketAddress) this.getChannel().remoteAddress()).getAddress()
+                    .equals(((InetSocketAddress) student.getChannel().remoteAddress()).getAddress());
         } else {
             return false;
         }
@@ -128,5 +124,35 @@ public class Student {
     @Override
     public String toString() {
         return "[" + id + "] " + name + "(" + ip + ":" + port + ")";
+    }
+
+    class ReadHandler extends ChannelInboundHandlerAdapter {
+        @Override
+        public void channelRead(ChannelHandlerContext ctx, Object msg) {
+            if (msg instanceof ByteBuf buf) {
+                short moduleId = buf.readShort();
+                short timestamp = buf.readShort();
+
+                if (buf.readableBytes() > 0) {
+                    if (!responses.containsKey(moduleId)) {
+                        responses.put(moduleId, new ConcurrentHashMap<>());
+                    }
+
+                    responses.get(moduleId).put(timestamp, buf.retain());
+                }
+            }
+        }
+
+        @Override
+        public void channelInactive(ChannelHandlerContext ctx) {
+            StudentManager.removeStudent(Student.this);
+            log.debug("Student {} disconnected", ip);
+        }
+
+        @Override
+        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+            log.error("Student {} disconnected due to exception", ip);
+            ctx.close();
+        }
     }
 }

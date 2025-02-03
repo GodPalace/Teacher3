@@ -1,32 +1,27 @@
 package com.godpalace.teacher3;
 
+import com.godpalace.teacher3.fx.message.Notification;
 import com.godpalace.teacher3.manager.StudentManager;
-import com.godpalace.teacher3.manager.ThreadPoolManager;
+import io.netty.bootstrap.ServerBootstrap;
+import io.netty.channel.*;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
 import javafx.collections.ObservableList;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.pomo.toasterfx.model.impl.ToastTypes;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
-import java.nio.channels.ServerSocketChannel;
-import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.concurrent.locks.ReentrantLock;
 
 @Getter
 @Slf4j
 public class NetworkListener {
-    private static Selector selector = null;
-
-    static {
-        try {
-            selector = Selector.open();
-        } catch (IOException e) {
-            log.error("Failed to open selector", e);
-        }
-    }
+    private static final ReentrantLock lock = new ReentrantLock();
 
     private static int idCounter = 0;
 
@@ -39,67 +34,28 @@ public class NetworkListener {
     @Getter
     private static final ArrayList<NetworkListener> scanListeners = new ArrayList<>();
 
-    public static void manage() {
-        ThreadPoolManager.getExecutor().execute(() -> {
-            while (true) {
-                try {
-                    selector.select(1500);
-
-                    for (SelectionKey key : selector.selectedKeys()) {
-                        if (key.isAcceptable()) {
-                            ServerSocketChannel sChannel = ((NetworkListener) key.attachment()).getChannel();
-                            if (sChannel == null) {
-                                continue;
-                            }
-
-                            SocketChannel accept;
-                            while ((accept = sChannel.accept()) == null) {
-                                Thread.yield();
-                            }
-
-                            Student student = new Student(accept);
-                            ObservableList<Student> students = StudentManager.getStudents();
-
-                            int index = students.indexOf(student);
-                            if (index >= 0) {
-                                Student s = students.get(index);
-
-                                if (s.isAlive()) {
-                                    Student.setIdCounter(Student.getIdCounter() - 1);
-                                    continue;
-                                } else {
-                                    StudentManager.removeStudent(s);
-                                    s.close();
-                                }
-                            }
-
-                            StudentManager.addStudent(student);
-
-                            if (Main.isRunOnCmd()) {
-                                System.out.println("\n新的学生连接: " + student.getIp()
-                                        + " (ID: " + student.getId() + ")");
-                                System.out.print("> ");
-                            } else {
-                                log.debug("New student connected: {} (ID: {})",
-                                        student.getName(), student.getId());
-                            }
-                        }
-                    }
-                } catch (Exception e) {
-                    log.error("Failed to accept connection", e);
-                    break;
-                }
-            }
-        });
-    }
-
     private final InetSocketAddress address;
-    private ServerSocketChannel channel;
+    private final EventLoopGroup workerGroup;
+    private final EventLoopGroup group;
 
-    public NetworkListener(InetSocketAddress address, boolean add) throws IOException {
+    public NetworkListener(InetSocketAddress address, boolean add) {
         this.address = address;
-        channel = ServerSocketChannel.open();
-        channel.bind(address);
+
+        group = new NioEventLoopGroup(1);
+        workerGroup = new NioEventLoopGroup();
+        ServerBootstrap bootstrap = new ServerBootstrap();
+        bootstrap.group(group, workerGroup)
+                .channel(NioServerSocketChannel.class)
+                .childHandler(new ChannelInitializer<SocketChannel>() {
+                    @Override
+                    protected void initChannel(SocketChannel ch) {
+                        ChannelPipeline pipeline = ch.pipeline();
+                        pipeline.addLast("Acceptor", new AcceptStudentHandler());
+                    }
+                })
+                .childOption(ChannelOption.SO_KEEPALIVE, true);
+
+        bootstrap.bind(address).syncUninterruptibly();
 
         if (add) {
             id = idCounter++;
@@ -107,18 +63,65 @@ public class NetworkListener {
         } else {
             id = -1;
         }
-
-        channel.configureBlocking(false);
-        channel.register(selector, SelectionKey.OP_ACCEPT).attach(this);
     }
 
     public void close() throws IOException {
-        channel.close();
-        channel = null;
+        group.shutdownGracefully();
+        workerGroup.shutdownGracefully();
+
+        if (id != -1) {
+            listeners.remove(id);
+        }
     }
 
     @Override
     public String toString() {
         return "[" + id + "] " + address.getAddress().getHostAddress() + ":" + address.getPort();
+    }
+
+    static class AcceptStudentHandler extends ChannelInboundHandlerAdapter {
+        @Override
+        public void channelActive(ChannelHandlerContext ctx) throws Exception {
+            Student student = new Student(ctx.channel());
+            ObservableList<Student> students = StudentManager.getStudents();
+
+            int index = students.indexOf(student);
+            if (index >= 0) {
+                Student s = students.get(index);
+
+                if (s.isAlive()) {
+                    Student.getIdCounter().decrementAndGet();
+                    return;
+                } else {
+                    StudentManager.removeStudent(s);
+                    s.close();
+                }
+            }
+
+            StudentManager.addStudent(student);
+
+            try {
+                lock.lock();
+
+                if (Main.isRunOnCmd()) {
+                    System.out.println("\n新的学生连接: " + student.getIp()
+                            + "(ID: " + student.getId() + ")");
+                    System.out.print("> ");
+                } else {
+                    Notification.show(
+                            "新的学生连接", student.getIp(), ToastTypes.INFO);
+                }
+            } finally {
+                lock.unlock();
+            }
+
+            super.channelActive(ctx);
+        }
+
+        @Override
+        public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+            log.error("Student disconnected: {}", ctx.channel().remoteAddress());
+            ctx.close();
+        }
     }
 }

@@ -1,11 +1,11 @@
 package com.godpalace.student.module;
 
 import com.godpalace.student.Teacher;
+import io.netty.buffer.ByteBuf;
 
 import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.File;
-import java.nio.ByteBuffer;
 
 public class ScreenLockModule implements Module {
     private static final File file = new File("C:\\Users\\Public\\.godpalace\\student\\lock.ok");
@@ -33,9 +33,11 @@ public class ScreenLockModule implements Module {
     }
 
     @Override
-    public void execute(Teacher teacher, ByteBuffer buffer) {
-        short cmd = buffer.getShort();
+    public ByteBuf execute(Teacher teacher, ByteBuf buffer) {
+        short cmd = buffer.readShort();
         lockFrame.setVisible(cmd == 1);
+
+        return null;
     }
 
     @Override
