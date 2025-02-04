@@ -154,7 +154,7 @@ public class BuilderStage extends Stage {
         hBox.setSpacing(10);
         hBox.setPadding(new Insets(3));
         hBox.getChildren().addAll(label, comboBox);
-        comboBox.getSelectionModel().selectFirst();
+        comboBox.setPromptText("请选择监听器");
         comboBox.setItems(FXCollections.observableArrayList(NetworkListener.getListeners().values()));
         comboBox.setOnAction(e -> {
             NetworkListener listener = comboBox.getSelectionModel().getSelectedItem();

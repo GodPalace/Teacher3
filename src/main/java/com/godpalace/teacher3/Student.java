@@ -1,5 +1,6 @@
 package com.godpalace.teacher3;
 
+import com.godpalace.teacher3.fx.message.Notification;
 import com.godpalace.teacher3.manager.ModuleManager;
 import com.godpalace.teacher3.manager.StudentManager;
 import com.godpalace.teacher3.manager.ThreadPoolManager;
@@ -13,6 +14,7 @@ import io.netty.handler.codec.compression.Lz4FrameDecoder;
 import io.netty.handler.codec.compression.Lz4FrameEncoder;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
+import org.pomo.toasterfx.model.impl.ToastTypes;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.ConcurrentHashMap;
@@ -146,12 +148,16 @@ public class Student {
         @Override
         public void channelInactive(ChannelHandlerContext ctx) {
             StudentManager.removeStudent(Student.this);
-            log.debug("Student {} disconnected", ip);
+
+            if (Main.isRunOnCmd()) {
+                System.out.println("学生" + ip + "已断开连接");
+            } else {
+                Notification.show("提示", "学生" + ip + "已断开连接", ToastTypes.INFO);
+            }
         }
 
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-            log.error("Student {} disconnected due to exception", ip);
             ctx.close();
         }
     }

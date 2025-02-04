@@ -71,7 +71,6 @@ public class Teacher {
 
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-            log.error("Teacher {} disconnected due to exception", ip);
             ctx.close();
         }
     }

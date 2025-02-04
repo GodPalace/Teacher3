@@ -78,6 +78,8 @@ public class Main {
         } catch (Exception e) {
             log.error("Error while initializing the program", e);
             System.exit(1);
+        } finally {
+            System.gc();
         }
 
         GraphicsEnvironment environment = GraphicsEnvironment.getLocalGraphicsEnvironment();
