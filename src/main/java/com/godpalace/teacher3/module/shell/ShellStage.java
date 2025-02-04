@@ -19,6 +19,7 @@ import javafx.stage.Stage;
 import lombok.extern.slf4j.Slf4j;
 import org.kordamp.ikonli.boxicons.BoxiconsRegular;
 import org.kordamp.ikonli.javafx.FontIcon;
+
 import java.io.InputStream;
 import java.util.ArrayList;
 
