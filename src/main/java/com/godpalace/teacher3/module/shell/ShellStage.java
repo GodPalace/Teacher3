@@ -22,7 +22,6 @@ import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.List;
 
 @Slf4j
 public class ShellStage extends Stage {
