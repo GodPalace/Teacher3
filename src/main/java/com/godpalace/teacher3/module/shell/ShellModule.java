@@ -53,7 +53,7 @@ public class ShellModule implements Module {
         Button button = createButton();
 
         button.setOnAction(e -> {
-            ShellStage stage = new ShellStage();
+            ShellStage stage = new ShellStage(this);
             stage.show();
         });
 

@@ -2,7 +2,6 @@ package com.godpalace.teacher3.module.shell;
 
 import com.godpalace.teacher3.TeacherGUI;
 import com.godpalace.teacher3.fx.builder.SceneAutoConfigBuilder;
-import com.godpalace.teacher3.manager.ModuleManager;
 import com.godpalace.teacher3.manager.StudentManager;
 import javafx.application.Platform;
 import javafx.scene.Parent;
@@ -26,8 +25,12 @@ import java.io.InputStream;
 public class ShellStage extends Stage {
     private static Image icon = null;
 
-    public ShellStage() {
+    private final ShellModule shellModule;
+
+    public ShellStage(ShellModule shellModule) {
         super();
+
+        this.shellModule = shellModule;
 
         if (icon == null) {
             try {
@@ -91,7 +94,6 @@ public class ShellStage extends Stage {
             inputTextField.setDisable(true);
             inputTextField.clear();
 
-            ShellModule shellModule = (ShellModule) ModuleManager.getIdMap().get((short) 0x04);
             shellModule.runShell(StudentManager.getFirstSelectedStudent(),
                     input, new ShellModule.Listener() {
                         @Override
