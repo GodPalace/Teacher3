@@ -302,7 +302,7 @@ public class StudentManager {
         ObservableList<Student> items = studentTable.getSelectionModel().getSelectedItems();
 
         if (!items.isEmpty()) {
-            for (Module module : ModuleManager.getModules().values()) {
+            for (Module module : ModuleManager.getNameMap().values()) {
                 Button button = ModuleManager.getGuiButtons().get(module.getID());
                 if (button == null) continue;
 

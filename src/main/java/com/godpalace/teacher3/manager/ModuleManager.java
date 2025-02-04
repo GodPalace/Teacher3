@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @Slf4j
 public class ModuleManager {
     @Getter
-    private static final ConcurrentHashMap<String, Module> modules = new ConcurrentHashMap<>();
+    private static final ConcurrentHashMap<String, Module> nameMap = new ConcurrentHashMap<>();
 
     @Getter
     private static final ConcurrentHashMap<Short, Module> idMap = new ConcurrentHashMap<>();
@@ -34,24 +34,24 @@ public class ModuleManager {
                 if (!Module.class.isAssignableFrom(clazz)) continue;
 
                 Module module = (Module) clazz.getDeclaredConstructor().newInstance();
-                if (modules.containsKey(module.getCommand())) {
+                if (nameMap.containsKey(module.getCommand())) {
                     log.error("Duplicate module ID: {}", module.getID());
                     continue;
                 }
 
-                modules.put(module.getCommand(), module);
+                nameMap.put(module.getCommand(), module);
                 idMap.put(module.getID(), module);
 
                 log.debug("Loading module: {}", className);
             }
         } catch (Exception e) {
-            log.error("Error initializing modules", e);
-            throw new Exception("Error initializing modules", e);
+            log.error("Error initializing nameMap", e);
+            throw new Exception("Error initializing nameMap", e);
         }
     }
 
     public static void initializeButtons() {
-        for (Module module : modules.values()) {
+        for (Module module : nameMap.values()) {
             Button button = module.getGuiButton();
             if (button == null) continue;
 

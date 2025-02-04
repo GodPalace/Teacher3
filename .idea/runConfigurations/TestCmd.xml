@@ -2,7 +2,7 @@
   <configuration default="false" name="TestCmd" type="Application" factoryName="Application" nameIsGenerated="true">
     <option name="MAIN_CLASS_NAME" value="com.godpalace.test.TestCmd" />
     <module name="Teacher3" />
-    <option name="VM_PARAMETERS" value="-Dio.netty.tryReflectionSetAccessible=true --add-opens java.base/jdk.internal.reflect=ALL-UNNAMED --add-opens java.base/jdk.internal.misc=ALL-UNNAMED --add-opens java.base/java.nio=ALL-UNNAMED" />
+    <option name="VM_PARAMETERS" value="-Dio.netty.tryReflectionSetAccessible=true --add-opens java.base/jdk.internal.reflect=ALL-UNNAMED --add-opens java.base/jdk.internal.misc=ALL-UNNAMED --add-opens java.base/java.nio=ALL-UNNAMED --add-opens javafx.graphics/javafx.stage=ALL-UNNAMED --add-opens javafx.graphics/com.sun.javafx.tk=ALL-UNNAMED" />
     <extension name="coverage">
       <pattern>
         <option name="PATTERN" value="com.godpalace.test.*" />

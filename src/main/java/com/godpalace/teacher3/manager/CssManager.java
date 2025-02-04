@@ -19,9 +19,9 @@ public class CssManager {
     private static final LinkedList<String> cssList = new LinkedList<>();
 
     public static void initializeCss() throws IOException {
-        URL cssUrl = CssManager.class.getResource("/css");
+        URL cssUrl = CssManager.class.getResource("/css/global");
         if (cssUrl == null) {
-            log.warn("No css files found in /css directory.");
+            log.warn("No css files found in /css/global directory.");
             return;
         }
 

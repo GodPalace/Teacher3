@@ -1,5 +1,6 @@
 package com.godpalace.teacher3.module;
 
+import com.godpalace.teacher3.Main;
 import com.godpalace.teacher3.Student;
 import com.godpalace.teacher3.manager.StudentManager;
 import io.netty.buffer.ByteBuf;
@@ -16,18 +17,20 @@ import java.io.InputStream;
 public class ScreenLockModule implements Module {
     private static Image LOCK_ICON = null;
 
-    static {
-        try {
-            InputStream in = ScreenLockModule.class.getResourceAsStream("/icon/ScreenLockIcon.png");
+    public ScreenLockModule() {
+        if (!Main.isRunOnCmd()) {
+            try {
+                InputStream in = ScreenLockModule.class.getResourceAsStream("/moduleIcon/ScreenLockIcon.png");
 
-            if (in != null) {
-                LOCK_ICON = new Image(in);
-                in.close();
-            } else {
-                log.error("Failed to load lock icon");
+                if (in != null) {
+                    LOCK_ICON = new Image(in);
+                    in.close();
+                } else {
+                    log.error("Failed to load lock icon");
+                }
+            } catch (IOException e) {
+                log.error("Failed to load lock icon", e);
             }
-        } catch (IOException e) {
-            log.error("Failed to load lock icon", e);
         }
     }
 

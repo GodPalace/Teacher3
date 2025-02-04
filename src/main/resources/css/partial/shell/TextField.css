@@ -1,0 +1,11 @@
+.text-field {
+    -fx-background-color: #000000;
+    -fx-border-color: #FFFFFF;
+    -fx-text-fill: #FFFFFF;
+    -fx-highlight-fill: #FFFFFF;
+    -fx-highlight-text-fill: #000000;
+}
+
+.text-field:focused {
+    -fx-border-color: #FFFFFF;
+}

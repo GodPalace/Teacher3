@@ -13,11 +13,20 @@ public class SceneAutoConfigBuilder {
         this.scene = new Scene(root);
     }
 
+    public SceneAutoConfigBuilder(Parent root, double width, double height) {
+        this.scene = new Scene(root, width, height);
+    }
+
     public SceneAutoConfigBuilder css() {
         for (String css : CssManager.getCssList()) {
             scene.getStylesheets().add(css);
         }
 
+        return this;
+    }
+
+    public SceneAutoConfigBuilder customizeCss(String css) {
+        scene.getStylesheets().add(css);
         return this;
     }
 

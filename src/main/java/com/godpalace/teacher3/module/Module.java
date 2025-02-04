@@ -43,10 +43,10 @@ public interface Module {
         while (!student.getResponses().containsKey(getID()) || !student.getResponses().get(getID()).containsKey(timestamp)) {
             try {
                 synchronized (this) {
-                    wait(100);
+                    wait(50);
                 }
 
-                if (count++ > 70) {
+                if (count++ > 100) {
                     if (Main.isRunOnCmd()) {
                         System.out.println(getName() + "获取响应超时");
                     } else {

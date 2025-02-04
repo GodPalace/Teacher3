@@ -1,0 +1,35 @@
+.text-area .scroll-pane .content {
+    -fx-background-color: #000000;
+    -fx-border-color: #FFFFFF;
+}
+
+.text-area {
+    -fx-text-fill: #FFFFFF;
+    -fx-highlight-fill: #FFFFFF;
+    -fx-highlight-text-fill: #000000;
+}
+
+.text-area .scroll-pane {
+    -fx-background-color: #000000;
+}
+
+.text-area .scroll-bar:vertical {
+    -fx-background-color: #000000;
+}
+
+.text-area .scroll-bar:vertical .thumb {
+    -fx-background-color: #FFFFFF;
+}
+
+.text-area .scroll-bar:horizontal {
+    -fx-background-color: #000000;
+}
+
+.text-area .scroll-bar:horizontal .thumb {
+    -fx-background-color: #FFFFFF;
+}
+
+.text-area:focused {
+    -fx-border-color: #FFFFFF;
+}
+
