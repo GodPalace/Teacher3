@@ -12,6 +12,7 @@ import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.input.Clipboard;
 import javafx.scene.input.ClipboardContent;
+import javafx.scene.input.KeyCode;
 import javafx.scene.input.MouseButton;
 import javafx.scene.layout.BorderPane;
 import javafx.stage.Stage;
@@ -20,12 +21,16 @@ import org.kordamp.ikonli.boxicons.BoxiconsRegular;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.InputStream;
+import java.util.ArrayList;
 
 @Slf4j
 public class ShellStage extends Stage {
     private static Image icon = null;
 
     private final ShellModule shellModule;
+
+    private final ArrayList<String> commands = new ArrayList<>();
+    private int commandIndex = 0;
 
     public ShellStage(ShellModule shellModule) {
         super();
@@ -89,10 +94,30 @@ public class ShellStage extends Stage {
         inputTextField.setContextMenu(new ContextMenu());
         inputTextField.setPromptText("请输入命令");
         root.setBottom(inputTextField);
+
+        inputTextField.setOnKeyPressed(e -> {
+            if (e.getCode().equals(KeyCode.UP)) {
+                if (commandIndex > 0) {
+                    commandIndex--;
+                    inputTextField.setText(commands.get(commandIndex));
+                }
+                e.consume();
+            }
+            if (e.getCode().equals(KeyCode.DOWN)) {
+                if (commandIndex < commands.size() - 1) {
+                    commandIndex++;
+                    inputTextField.setText(commands.get(commandIndex));
+                }
+                e.consume();
+            }
+        });
         inputTextField.setOnAction(e -> {
             String input = inputTextField.getText();
             inputTextField.setDisable(true);
             inputTextField.clear();
+
+            if (!input.isEmpty()) commands.add(input);
+            commandIndex = commands.size();
 
             shellModule.runShell(StudentManager.getFirstSelectedStudent(),
                     input, new ShellModule.Listener() {
