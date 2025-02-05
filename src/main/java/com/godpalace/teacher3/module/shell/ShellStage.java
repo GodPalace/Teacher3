@@ -3,6 +3,7 @@ package com.godpalace.teacher3.module.shell;
 import com.godpalace.teacher3.TeacherGUI;
 import com.godpalace.teacher3.fx.builder.SceneAutoConfigBuilder;
 import com.godpalace.teacher3.manager.StudentManager;
+import com.godpalace.teacher3.manager.ThreadPoolManager;
 import javafx.application.Platform;
 import javafx.scene.Parent;
 import javafx.scene.control.Alert;
@@ -87,6 +88,8 @@ public class ShellStage extends Stage {
                 }
 
                 shellTextArea.deselect();
+                inputTextField.requestFocus();
+
                 e.consume();
             }
         });
@@ -101,58 +104,66 @@ public class ShellStage extends Stage {
                     commandIndex--;
                     inputTextField.setText(commands.get(commandIndex));
                 }
+                
                 e.consume();
-            }
-            if (e.getCode().equals(KeyCode.DOWN)) {
+            } else if (e.getCode().equals(KeyCode.DOWN)) {
                 if (commandIndex < commands.size() - 1) {
                     commandIndex++;
                     inputTextField.setText(commands.get(commandIndex));
                 }
+                
                 e.consume();
             }
         });
         inputTextField.setOnAction(e -> {
-            String input = inputTextField.getText();
             inputTextField.setDisable(true);
-            inputTextField.clear();
 
-            if (!input.isEmpty()) commands.add(input);
-            commandIndex = commands.size();
+            ThreadPoolManager.getExecutor().execute(() -> {
+                String input = inputTextField.getText();
+                inputTextField.clear();
 
-            shellModule.runShell(StudentManager.getFirstSelectedStudent(),
-                    input, new ShellModule.Listener() {
-                        @Override
-                        public void onShellResult(String result) {
-                            Platform.runLater(() -> {
-                                shellTextArea.appendText(result + "\n");
-                                shellTextArea.end();
-                            });
-                        }
+                if (!input.isEmpty()) commands.add(input);
+                commandIndex = commands.size();
 
-                        @Override
-                        public void onShellEnd() {
-                            Platform.runLater(() -> {
-                                shellTextArea.appendText("\n");
+                if (input.equals("cls")) {
+                    shellTextArea.clear();
+                }
 
-                                inputTextField.setDisable(false);
-                                inputTextField.requestFocus();
-                            });
-                        }
+                shellModule.runShell(StudentManager.getFirstSelectedStudent(),
+                        input, new ShellModule.Listener() {
+                            @Override
+                            public void onShellResult(String result) {
+                                Platform.runLater(() -> {
+                                    shellTextArea.appendText(result + "\n");
+                                    shellTextArea.end();
+                                });
+                            }
 
-                        @Override
-                        public void onShellError() {
-                            Platform.runLater(() -> {
-                                Alert alert = new Alert(Alert.AlertType.ERROR);
-                                alert.setGraphic(new FontIcon(BoxiconsRegular.ERROR));
-                                alert.setTitle("错误");
-                                alert.setHeaderText("命令执行失败");
-                                alert.setContentText("请检查输入命令是否正确");
-                                alert.showAndWait();
+                            @Override
+                            public void onShellEnd() {
+                                Platform.runLater(() -> {
+                                    shellTextArea.appendText("\n");
+                                    inputTextField.requestFocus();
+                                });
+                            }
 
-                                onShellEnd();
-                            });
-                        }
-                    });
+                            @Override
+                            public void onShellError() {
+                                Platform.runLater(() -> {
+                                    Alert alert = new Alert(Alert.AlertType.ERROR);
+                                    alert.setGraphic(new FontIcon(BoxiconsRegular.ERROR));
+                                    alert.setTitle("错误");
+                                    alert.setHeaderText("命令执行失败");
+                                    alert.setContentText("请检查输入命令是否正确");
+                                    alert.showAndWait();
+
+                                    onShellEnd();
+                                });
+                            }
+                        });
+
+                inputTextField.setDisable(false);
+            });
         });
 
         return root;

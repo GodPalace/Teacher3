@@ -5,6 +5,8 @@ import javafx.scene.Parent;
 import javafx.scene.Scene;
 import lombok.extern.slf4j.Slf4j;
 
+import java.util.Objects;
+
 @Slf4j
 public class SceneAutoConfigBuilder {
     private final Scene scene;
@@ -26,7 +28,7 @@ public class SceneAutoConfigBuilder {
     }
 
     public SceneAutoConfigBuilder customizeCss(String css) {
-        scene.getStylesheets().add(css);
+        scene.getStylesheets().add(Objects.requireNonNull(getClass().getResource(css)).toExternalForm());
         return this;
     }
 

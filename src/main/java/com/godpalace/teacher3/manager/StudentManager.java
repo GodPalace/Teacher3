@@ -302,7 +302,7 @@ public class StudentManager {
         ObservableList<Student> items = studentTable.getSelectionModel().getSelectedItems();
 
         if (!items.isEmpty()) {
-            for (Module module : ModuleManager.getNameMap().values()) {
+            for (Module module : ModuleManager.getShellMap().values()) {
                 Button button = ModuleManager.getGuiButtons().get(module.getID());
                 if (button == null) continue;
 
@@ -349,10 +349,12 @@ public class StudentManager {
         popup.setOnAutoHide(event -> popup.hide());
         popup.getContent().addAll(disconnectButton);
 
-        studentTable.setOnMouseReleased(event -> {
+        studentTable.setOnMouseClicked(event -> {
             if (event.getButton().equals(MouseButton.SECONDARY)) {
                 if (studentTable.getSelectionModel().getSelectedItem() == null) return;
                 popup.show(studentTable, event.getScreenX(), event.getScreenY());
+            } else {
+                popup.hide();
             }
         });
     }

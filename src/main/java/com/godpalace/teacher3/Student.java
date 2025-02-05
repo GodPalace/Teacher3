@@ -35,7 +35,7 @@ public class Student {
     private final AtomicReference<String> name = new AtomicReference<>("...");
 
     @Getter
-    private final AtomicBoolean[] statuses = new AtomicBoolean[ModuleManager.getNameMap().size() + 1];
+    private final AtomicBoolean[] statuses = new AtomicBoolean[ModuleManager.getShellMap().size() + 1];
 
     @Getter
     private final String ip;

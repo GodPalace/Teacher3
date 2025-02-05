@@ -26,7 +26,7 @@ public class TeacherCMD {
         helpString.append("  exit - 退出教师端\n");
         helpString.append("\n");
 
-        for (Module module : ModuleManager.getNameMap().values()) {
+        for (Module module : ModuleManager.getShellMap().values()) {
             String command = module.getCommand().trim();
             if (command.isEmpty()) continue;
 
@@ -102,7 +102,7 @@ public class TeacherCMD {
                     }
                 }
 
-                ConcurrentHashMap<String, Module> modules = ModuleManager.getNameMap();
+                ConcurrentHashMap<String, Module> modules = ModuleManager.getShellMap();
                 if (modules.containsKey(cmd)) {
                     Module module = modules.get(cmd);
 

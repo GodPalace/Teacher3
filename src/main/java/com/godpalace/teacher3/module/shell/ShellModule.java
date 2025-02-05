@@ -122,7 +122,7 @@ public class ShellModule implements Module {
                 request.release();
 
                 synchronized (lock) {
-                    lock.wait();
+                    lock.wait(10000);
                 }
 
                 break;

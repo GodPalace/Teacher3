@@ -25,6 +25,7 @@ import javafx.scene.control.SplitPane;
 import javafx.scene.image.Image;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
+import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -48,7 +49,7 @@ public class TeacherGUI extends Application {
     private static HostServices services = null;
 
     @Getter
-    private Scene scene;
+    private Scene mainScene;
 
     @Getter
     private Scene hideScene;
@@ -138,7 +139,7 @@ public class TeacherGUI extends Application {
             if (passwordField.getText().equals(TeacherDatabase.password)) {
                 Platform.runLater(() -> {
                     isLocked = false;
-                    gui.setScene(scene);
+                    gui.setScene(mainScene);
 
                     gui.sizeToScene();
                     gui.centerOnScreen();
@@ -177,9 +178,9 @@ public class TeacherGUI extends Application {
         Parent rootPane = getRootPane();
         Parent lockPane = getLockPane();
 
-        scene = new SceneAutoConfigBuilder(rootPane, stage.getWidth(), stage.getHeight()).css().build();
+        mainScene = new SceneAutoConfigBuilder(rootPane, stage.getWidth(), stage.getHeight()).css().build();
         hideScene = new SceneAutoConfigBuilder(lockPane, stage.getWidth(), stage.getHeight()).css().build();
-        stage.setScene(scene);
+        stage.setScene(mainScene);
 
         gui.show();
 
@@ -212,6 +213,16 @@ public class TeacherGUI extends Application {
     }
 
     public static void exit(int status) {
+        StackPane root = new StackPane();
+        Text text = new Text("正在退出教师端(退出代码: " + status + ")...");
+
+        StackPane.setAlignment(text, Pos.CENTER);
+        root.getChildren().add(text);
+
+        gui.setScene(new Scene(root, gui.getWidth(), gui.getHeight()));
+        gui.sizeToScene();
+        gui.centerOnScreen();
+
         Platform.exit();
         System.exit(status);
     }

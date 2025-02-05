@@ -18,7 +18,9 @@ module com.godpalace.teacher {
 
     exports com.godpalace.teacher3;
     exports com.godpalace.teacher3.fx.menu.help.about to javafx.fxml;
+    exports com.godpalace.teacher3.fx.menu.help.help to javafx.fxml;
 
     opens com.godpalace.teacher3;
     opens com.godpalace.teacher3.fx.menu.help.about to javafx.fxml;
+    opens com.godpalace.teacher3.fx.menu.help.help to javafx.fxml;
 }

@@ -1,7 +1,8 @@
-package com.godpalace.teacher3.fx.menu.help.about;
+package com.godpalace.teacher3.fx.menu.help.help;
 
 import com.godpalace.teacher3.TeacherGUI;
 import com.godpalace.teacher3.fx.builder.SceneAutoConfigBuilder;
+import com.godpalace.teacher3.fx.menu.help.about.AboutStage;
 import javafx.fxml.FXMLLoader;
 import javafx.scene.image.Image;
 import javafx.stage.Stage;
@@ -12,15 +13,15 @@ import java.io.InputStream;
 import java.net.URL;
 
 @Slf4j
-public class AboutStage extends Stage {
+public class HelpStage extends Stage {
     private static Image icon;
 
-    public AboutStage() {
+    public HelpStage() {
         super();
 
         try {
             if (icon == null) {
-                InputStream in = AboutStage.class.getResourceAsStream("/icon/About.png");
+                InputStream in = AboutStage.class.getResourceAsStream("/icon/Help.png");
 
                 if (in != null) {
                     icon = new Image(in);
@@ -34,14 +35,14 @@ public class AboutStage extends Stage {
             icon = TeacherGUI.getIcon();
         }
 
-        this.setTitle("关于");
+        this.setTitle("帮助");
         this.getIcons().add(icon);
         this.setWidth(500);
         this.setHeight(500);
         this.setResizable(false);
 
         try {
-            URL resource = getClass().getResource("/fxml/About.fxml");
+            URL resource = getClass().getResource("/fxml/Help.fxml");
 
             if (resource != null) {
                 this.setScene(new SceneAutoConfigBuilder(FXMLLoader.load(resource)).build());
