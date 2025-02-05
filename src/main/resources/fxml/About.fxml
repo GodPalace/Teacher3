@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.Button?>
+<?import javafx.scene.layout.AnchorPane?>
+<?import javafx.scene.layout.HBox?>
+<?import javafx.scene.shape.Rectangle?>
+<?import javafx.scene.text.Font?>
+<?import javafx.scene.text.Text?>
+<AnchorPane maxHeight="-Infinity" maxWidth="-Infinity" minHeight="-Infinity" minWidth="-Infinity" prefHeight="400.0"
+            prefWidth="500.0" style="-fx-background-color: #EEEEEE;" xmlns="http://javafx.com/javafx"
+            xmlns:fx="http://javafx.com/fxml"
+            fx:controller="com.godpalace.teacher3.fx.menu.help.about.AboutController">
+   <Text fill="#000000cc" layoutX="81.0" layoutY="50.0" strokeType="OUTSIDE" strokeWidth="0.0" text="关于我们"
+         textAlignment="CENTER" wrappingWidth="338.6402053833008">
+      <font>
+         <Font size="35.0"/>
+      </font>
+   </Text>
+   <Rectangle arcHeight="5.0" arcWidth="5.0" fill="WHITE" height="264.0" layoutX="129.0" layoutY="68.0" stroke="BLACK"
+              strokeType="INSIDE" width="242.0" />
+   <Text layoutX="142.0" layoutY="96.0" strokeType="OUTSIDE" strokeWidth="0.0" text="团队:  GodPalace"
+         wrappingWidth="216.24029541015625" />
+   <Text layoutX="142.0" layoutY="111.0" strokeType="OUTSIDE" strokeWidth="0.0" text="成员: PVPkin, XiaoQi-2011"
+         wrappingWidth="216.24029541015625" />
+   <HBox alignment="CENTER" layoutX="129.0" layoutY="342.0" prefHeight="44.0" prefWidth="242.0">
+      <Button fx:id="githubButton" mnemonicParsing="false" prefHeight="45.0" prefWidth="45.0" />
+   </HBox>
+</AnchorPane>

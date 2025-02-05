@@ -12,6 +12,7 @@ import com.godpalace.teacher3.manager.MenuManager;
 import com.godpalace.teacher3.manager.ModuleManager;
 import com.godpalace.teacher3.manager.StudentManager;
 import javafx.application.Application;
+import javafx.application.HostServices;
 import javafx.application.Platform;
 import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
@@ -42,6 +43,9 @@ public class TeacherGUI extends Application {
 
     @Getter
     private static boolean isLocked = false;
+
+    @Getter
+    private static HostServices services = null;
 
     @Getter
     private Scene scene;
@@ -83,6 +87,8 @@ public class TeacherGUI extends Application {
         CssManager.initializeCss();
         MenuManager.initialize();
         ModuleManager.initializeButtons();
+
+        services = getHostServices();
     }
 
     private Parent getContextPane() {
