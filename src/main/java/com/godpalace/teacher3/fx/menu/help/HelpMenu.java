@@ -21,6 +21,6 @@ public class HelpMenu extends FXMenu {
 
     @Override
     public short getSortIndex() {
-        return 2;
+        return 3;
     }
 }

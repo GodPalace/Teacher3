@@ -26,11 +26,11 @@ import java.util.ArrayList;
 
 @Slf4j
 public class ShellStage extends Stage {
+    private static final ArrayList<String> commands = new ArrayList<>();
     private static Image icon = null;
 
     private final ShellModule shellModule;
 
-    private final ArrayList<String> commands = new ArrayList<>();
     private int commandIndex = 0;
 
     public ShellStage(ShellModule shellModule) {
@@ -103,6 +103,7 @@ public class ShellStage extends Stage {
                 if (commandIndex > 0) {
                     commandIndex--;
                     inputTextField.setText(commands.get(commandIndex));
+                    inputTextField.end();
                 }
                 
                 e.consume();
@@ -110,6 +111,7 @@ public class ShellStage extends Stage {
                 if (commandIndex < commands.size() - 1) {
                     commandIndex++;
                     inputTextField.setText(commands.get(commandIndex));
+                    inputTextField.end();
                 }
                 
                 e.consume();

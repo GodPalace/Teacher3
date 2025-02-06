@@ -14,7 +14,7 @@ import java.net.URL;
 
 @Slf4j
 public class HelpStage extends Stage {
-    private static Image icon;
+    private static Image icon = null;
 
     public HelpStage() {
         super();
@@ -37,8 +37,6 @@ public class HelpStage extends Stage {
 
         this.setTitle("帮助");
         this.getIcons().add(icon);
-        this.setWidth(500);
-        this.setHeight(500);
         this.setResizable(false);
 
         try {
@@ -50,5 +48,8 @@ public class HelpStage extends Stage {
         } catch (IOException e) {
             log.warn("Failed to load root for AboutStage", e);
         }
+
+        this.sizeToScene();
+        this.centerOnScreen();
     }
 }

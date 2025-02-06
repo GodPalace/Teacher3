@@ -25,6 +25,7 @@ import javafx.scene.control.SplitPane;
 import javafx.scene.image.Image;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
+import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
 import lombok.Getter;
@@ -215,6 +216,8 @@ public class TeacherGUI extends Application {
     public static void exit(int status) {
         StackPane root = new StackPane();
         Text text = new Text("正在退出教师端(退出代码: " + status + ")...");
+
+        text.setFont(new Font(16));
 
         StackPane.setAlignment(text, Pos.CENTER);
         root.getChildren().add(text);
