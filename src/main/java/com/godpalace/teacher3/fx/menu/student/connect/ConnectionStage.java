@@ -22,7 +22,7 @@ public class ConnectionStage extends Stage {
 
         this.setTitle("直接连接");
         this.getIcons().add(TeacherGUI.getIcon());
-        this.setWidth(300);
+        this.setWidth(250);
         this.setHeight(60);
         this.setResizable(false);
 

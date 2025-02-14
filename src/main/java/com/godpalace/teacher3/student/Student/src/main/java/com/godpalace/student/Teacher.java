@@ -14,6 +14,7 @@ import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
 import java.net.InetSocketAddress;
+import java.util.Arrays;
 
 @Slf4j
 @Getter
@@ -101,10 +102,8 @@ public class Teacher {
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof Teacher teacher) {
-            return ((InetSocketAddress) this.getChannel().remoteAddress())
-                    .getAddress()
-                    .equals(((InetSocketAddress) teacher.getChannel().remoteAddress())
-                            .getAddress());
+            return Arrays.equals(((InetSocketAddress) this.getChannel().remoteAddress()).getAddress().getAddress(),
+                    ((InetSocketAddress) teacher.getChannel().remoteAddress()).getAddress().getAddress());
         } else {
             return false;
         }

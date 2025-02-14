@@ -19,25 +19,22 @@ import javafx.scene.image.Image;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 
-import java.io.ByteArrayInputStream;
-import java.io.File;
-import java.io.IOException;
-import java.io.ObjectInputStream;
+import java.io.*;
 import java.net.BindException;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.StandardOpenOption;
-import java.util.HashMap;
-import java.util.Random;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.zip.GZIPInputStream;
 
 @Slf4j
 public class FileManagerModule implements Module {
     private static final short CHECK_EXIST   = 0x01;
-    private static final short CHECK_FILE    = CHECK_EXIST + 1;
-    private static final short LIST_FILES    = CHECK_FILE + 1;
+    private static final short GET_FILE_TYPE = CHECK_EXIST + 1;
+    private static final short LIST_FILES    = GET_FILE_TYPE + 1;
     private static final short NEW_FILE      = LIST_FILES + 1;
     private static final short NEW_DIRECTORY = NEW_FILE + 1;
     private static final short DELETE_FILE   = NEW_DIRECTORY + 1;
@@ -46,6 +43,7 @@ public class FileManagerModule implements Module {
     private static final short DOWNLOAD_FILE = UPLOAD_FILE + 1;
     private static final short LOCK_FILE     = DOWNLOAD_FILE + 1;
     private static final short UNLOCK_FILE   = LOCK_FILE + 1;
+    private static final short GET_FILE_INFO = UNLOCK_FILE + 1;
 
     private static final short SUCCESS              = 0x01;
     private static final short ERROR_NOT_FOUND_PATH = SUCCESS + 1;
@@ -120,6 +118,7 @@ public class FileManagerModule implements Module {
                       new-dir [name] - 创建新目录
                       delete [name] - 删除文件
                       rename [old] [new] - 重命名文件
+                      info [name] - 获取文件信息
                     
                       upload [local_file] - 上传文件到当前目录
                       download [remote_file] - 下载文件到本地
@@ -153,72 +152,11 @@ public class FileManagerModule implements Module {
                 }
 
                 // 切换当前目录
-                Student student = StudentManager.getFirstSelectedStudent();
-                if (student == null) return;
-                String curDir = curDirs.get(student);
-
-                String arg = args[1].trim();
-                if (arg.startsWith(File.separator)) arg = arg.substring(1);
-                if (arg.endsWith(File.separator)) arg = arg.substring(0, arg.length() - 1);
-                if (arg.equals("..")) {
-                    try {
-                        if (curDir.length() == 3) {
-                            curDirs.put(student, File.separator);
-                            System.out.println("切换成功");
-                            return;
-                        }
-
-                        curDir = curDir.substring(0, curDir
-                                .substring(0, curDir.length() - 1)
-                                .lastIndexOf(File.separator));
-
-                        arg = "";
-                    } catch (StringIndexOutOfBoundsException e) {
-                        System.out.println("切换失败, 已经在根目录");
-                        return;
-                    }
+                if (cd(args[1].trim())) {
+                    System.out.println("切换成功");
+                } else {
+                    System.out.println("切换失败");
                 }
-
-                String path = (arg.contains(":")? arg : curDir + arg);
-                if (!path.endsWith(File.separator)) path += File.separator;
-
-                byte[] bytes = path.getBytes();
-
-                // 发送请求
-                ByteBuf request = Unpooled.buffer(2 + bytes.length);
-                request.writeShort(CHECK_FILE);
-                request.writeBytes(bytes);
-                short timestamp = student.sendRequest(getID(), request);
-                request.release();
-
-                ByteBuf response = readResponse(student, timestamp);
-                if (response == null) return;
-
-                // 处理响应
-                switch (response.readShort()) {
-                    case SUCCESS -> {
-                        try {
-                            boolean is = response.readBoolean();
-
-                            if (!is) {
-                                // 不是文件
-                                curDirs.put(student, path);
-                                System.out.println("切换成功");
-                            } else {
-                                // 是文件
-                                System.out.println("切换失败, 指向的是文件");
-                            }
-                        } catch (Exception e) {
-                            System.out.println("切换失败: " + e.getMessage());
-                        }
-                    }
-
-                    case ERROR_NOT_FOUND_FILE -> System.out.println("路径不存在");
-
-                    default -> System.out.println("切换失败");
-                }
-
-                response.release();
             }
 
             case "dir" -> {
@@ -239,53 +177,14 @@ public class FileManagerModule implements Module {
                 }
 
                 // 列出当前目录文件
-                Student student = StudentManager.getFirstSelectedStudent();
-                if (student == null) return;
-                String curDir = curDirs.get(student);
-
-                byte[] bytes = curDir.getBytes();
-
-                // 发送请求
-                ByteBuf request = Unpooled.buffer(2 + bytes.length);
-                request.writeShort(LIST_FILES);
-                request.writeBytes(bytes);
-                short timestamp = student.sendRequest(getID(), request);
-                request.release();
-
-                ByteBuf response = readResponse(student, timestamp);
-                if (response == null) return;
-
-                // 处理响应
-                if (response.readShort() == SUCCESS) {
-                    int count = response.readInt();
-                    bytes = new byte[response.readableBytes()];
-                    response.readBytes(bytes);
-
-                    // 处理文件列表
-                    GZIPInputStream gzipIn = new GZIPInputStream(new ByteArrayInputStream(bytes));
-                    ObjectInputStream objIn = new ObjectInputStream(gzipIn);
-
-                    try {
-                        for (int i = 0; i < count; i++) {
-                            File file = (File) objIn.readObject();
-                            System.out.println("[" + (file.isFile() ? "文件" : "目录") + "] "
-                                    + file.getName()
-                                    + (file.isFile() ? "  |  大小: " + file.length() + "字节" : "")
-                                    + "  |  是否隐藏: " + (file.isHidden()? "是" : "否")
-                                    + "  |  上次修改时间: "
-                                    + (System.currentTimeMillis() - file.lastModified()) / 1000 + "秒");
-                        }
-                    } catch (ClassNotFoundException e) {
-                        System.out.println("列出失败: " + e.getMessage());
+                List<RemoteFile> files = list();
+                if (files != null) {
+                    for (RemoteFile file : files) {
+                        System.out.println("[" + file.type() + "] " + file.name());
                     }
-
-                    objIn.close();
-                    gzipIn.close();
                 } else {
                     System.out.println("列出失败");
                 }
-
-                response.release();
             }
 
             case "new-file" -> {
@@ -295,35 +194,11 @@ public class FileManagerModule implements Module {
                 }
 
                 // 创建新文件
-                Student student = StudentManager.getFirstSelectedStudent();
-                if (student == null) return;
-                String curDir = curDirs.get(student);
-
-                String arg = args[1].trim();
-                if (arg.startsWith(File.separator)) arg = arg.substring(1);
-                if (arg.endsWith(File.separator)) arg = arg.substring(0, arg.length() - 1);
-
-                String path = (arg.contains(":")? arg : curDir + arg);
-                byte[] bytes = path.getBytes();
-
-                // 发送请求
-                ByteBuf request = Unpooled.buffer(2 + bytes.length);
-                request.writeShort(NEW_FILE);
-                request.writeBytes(bytes);
-                short timestamp = student.sendRequest(getID(), request);
-                request.release();
-
-                ByteBuf response = readResponse(student, timestamp);
-                if (response == null) return;
-
-                // 处理响应
-                switch (response.readShort()) {
-                    case SUCCESS -> System.out.println("创建成功");
-                    case ERROR_INVALID_FILE -> System.out.println("文件已存在");
-                    case ERROR_CREATE_FILE -> System.out.println("创建失败");
+                if (newFile(args[1].trim())) {
+                    System.out.println("创建成功");
+                } else {
+                    System.out.println("创建失败");
                 }
-
-                response.release();
             }
 
             case "new-dir" -> {
@@ -333,35 +208,11 @@ public class FileManagerModule implements Module {
                 }
 
                 // 创建新目录
-                Student student = StudentManager.getFirstSelectedStudent();
-                if (student == null) return;
-                String curDir = curDirs.get(student);
-
-                String arg = args[1].trim();
-                if (arg.startsWith(File.separator)) arg = arg.substring(1);
-                if (arg.endsWith(File.separator)) arg = arg.substring(0, arg.length() - 1);
-
-                String path = (arg.contains(":")? arg : curDir + arg);
-                byte[] bytes = path.getBytes();
-
-                // 发送请求
-                ByteBuf request = Unpooled.buffer(2 + bytes.length);
-                request.writeShort(NEW_DIRECTORY);
-                request.writeBytes(bytes);
-                short timestamp = student.sendRequest(getID(), request);
-                request.release();
-
-                ByteBuf response = readResponse(student, timestamp);
-                if (response == null) return;
-
-                // 处理响应
-                switch (response.readShort()) {
-                    case SUCCESS -> System.out.println("创建成功");
-                    case ERROR_INVALID_PATH -> System.out.println("路径已存在");
-                    case ERROR_CREATE_FILE -> System.out.println("创建失败");
+                if (newDir(args[1].trim())) {
+                    System.out.println("创建成功");
+                } else {
+                    System.out.println("创建失败");
                 }
-
-                response.release();
             }
 
             case "delete" -> {
@@ -371,35 +222,11 @@ public class FileManagerModule implements Module {
                 }
 
                 // 删除文件
-                Student student = StudentManager.getFirstSelectedStudent();
-                if (student == null) return;
-                String curDir = curDirs.get(student);
-
-                String arg = args[1].trim();
-                if (arg.startsWith(File.separator)) arg = arg.substring(1);
-                if (arg.endsWith(File.separator)) arg = arg.substring(0, arg.length() - 1);
-
-                String path = (arg.contains(":")? arg : curDir + arg);
-                byte[] bytes = path.getBytes();
-
-                // 发送请求
-                ByteBuf request = Unpooled.buffer(2 + bytes.length);
-                request.writeShort(DELETE_FILE);
-                request.writeBytes(bytes);
-                short timestamp = student.sendRequest(getID(), request);
-                request.release();
-
-                ByteBuf response = readResponse(student, timestamp);
-                if (response == null) return;
-
-                // 处理响应
-                switch (response.readShort()) {
-                    case SUCCESS -> System.out.println("删除成功");
-                    case ERROR_NOT_FOUND_FILE -> System.out.println("文件不存在");
-                    case ERROR_DELETE_FILE -> System.out.println("删除失败");
+                if (delete(args[1].trim())) {
+                    System.out.println("删除成功");
+                } else {
+                    System.out.println("删除失败");
                 }
-
-                response.release();
             }
 
             case "rename" -> {
@@ -409,44 +236,11 @@ public class FileManagerModule implements Module {
                 }
 
                 // 重命名文件
-                Student student = StudentManager.getFirstSelectedStudent();
-                if (student == null) return;
-                String curDir = curDirs.get(student);
-
-                String old = args[1].trim();
-                if (old.startsWith(File.separator)) old = old.substring(1);
-                if (old.endsWith(File.separator)) old = old.substring(0, old.length() - 1);
-
-                String new_ = args[2].trim();
-                if (new_.startsWith(File.separator)) new_ = new_.substring(1);
-                if (new_.endsWith(File.separator)) new_ = new_.substring(0, new_.length() - 1);
-
-                String old_path = (old.contains(":")? old : curDir + old);
-                String new_path = (new_.contains(":")? new_ : curDir + new_);
-                byte[] old_bytes = old_path.getBytes();
-                byte[] new_bytes = new_path.getBytes();
-
-                ByteBuf request = Unpooled.buffer(10 + old_bytes.length + new_bytes.length);
-                request.writeShort(RENAME_FILE);
-                request.writeInt(old_bytes.length);
-                request.writeBytes(old_bytes);
-                request.writeInt(new_bytes.length);
-                request.writeBytes(new_bytes);
-                short timestamp = student.sendRequest(getID(), request);
-                request.release();
-
-                ByteBuf response = readResponse(student, timestamp);
-                if (response == null) return;
-
-                // 处理响应
-                switch (response.readShort()) {
-                    case SUCCESS -> System.out.println("重命名成功");
-                    case ERROR_NOT_FOUND_FILE -> System.out.println("文件不存在");
-                    case ERROR_INVALID_FILE -> System.out.println("新文件名已存在");
-                    case ERROR_RENAME_FILE -> System.out.println("重命名失败");
+                if (rename(args[1].trim(), args[2].trim())) {
+                    System.out.println("重命名成功");
+                } else {
+                    System.out.println("重命名失败");
                 }
-
-                response.release();
             }
 
             case "upload" -> {
@@ -455,87 +249,11 @@ public class FileManagerModule implements Module {
                     return;
                 }
 
-                Student student = StudentManager.getFirstSelectedStudent();
-                if (student == null) return;
-                String curDir = curDirs.get(student);
-                InetSocketAddress sip = (InetSocketAddress) student.getChannel().localAddress();
-
-                // 获取本地文件
-                String arg = args[1].trim();
-                if (arg.startsWith(File.separator)) arg = arg.substring(1);
-                if (arg.endsWith(File.separator)) arg = arg.substring(0, arg.length() - 1);
-                String path = (arg.contains(":")? arg : curDir + arg);
-
-                File localFile = new File(path);
-                if (!localFile.exists()) {
-                    System.out.println("本地文件不存在");
-                    return;
-                }
-
                 // 上传文件到当前目录
-                Object lock = new Object();
-                Random portRandom = new Random();
-
-                int port = portRandom.nextInt(1000) + 37000;
-                while (true) {
-                    try {
-                        ServerSocket socket = new ServerSocket(port, 1, sip.getAddress());
-                        socket.close();
-
-                        EventLoopGroup group = new NioEventLoopGroup(1);
-                        EventLoopGroup workerGroup = new NioEventLoopGroup(1);
-                        ServerBootstrap bootstrap = new ServerBootstrap();
-                        bootstrap.group(group, workerGroup)
-                                .channel(NioServerSocketChannel.class)
-                                .childHandler(new ChannelInitializer<SocketChannel>() {
-                                    @Override
-                                    protected void initChannel(SocketChannel ch) {
-                                        ChannelPipeline pipeline = ch.pipeline();
-
-                                        pipeline.addLast(new Lz4FrameEncoder());
-                                        pipeline.addLast(new UploadFileHandler(localFile, lock));
-                                    }
-                                });
-                        ChannelFuture future = bootstrap.bind(new InetSocketAddress(sip.getAddress(), port))
-                                .syncUninterruptibly();
-
-                        byte[] fileName = (curDir + localFile.getName()).getBytes();
-                        int nameLength = fileName.length;
-
-                        // 发送请求
-                        ByteBuf request = Unpooled.buffer(10 + nameLength);
-                        request.writeShort(UPLOAD_FILE);
-                        request.writeInt(nameLength);
-                        request.writeBytes(fileName);
-                        request.writeInt(port);
-                        student.sendRequest(getID(), request);
-                        request.release();
-
-                        try {
-                            System.out.print("上传中");
-
-                            synchronized (lock) {
-                                lock.wait();
-                            }
-
-                            System.out.println("\n上传完成");
-                        } catch (InterruptedException e) {
-                            System.out.println("\n上传失败: " + e.getMessage());
-                            return;
-                        } finally {
-                            future.channel().close().syncUninterruptibly();
-
-                            group.shutdownGracefully();
-                            workerGroup.shutdownGracefully();
-                        }
-
-                        break;
-                    } catch (BindException e) {
-                        port = portRandom.nextInt(1000) + 37000;
-                    } catch (IOException e) {
-                        System.out.println("上传失败: " + e.getMessage());
-                        return;
-                    }
+                if (upload(args[1].trim())) {
+                    System.out.println("上传成功");
+                } else {
+                    System.out.println("上传失败");
                 }
             }
 
@@ -546,83 +264,10 @@ public class FileManagerModule implements Module {
                 }
 
                 // 下载文件到本地
-                Student student = StudentManager.getFirstSelectedStudent();
-                if (student == null) return;
-                String curDir = curDirs.get(student);
-                InetSocketAddress sip = (InetSocketAddress) student.getChannel().localAddress();
-
-                String arg = args[1].trim();
-                if (arg.startsWith(File.separator)) arg = arg.substring(1);
-                if (arg.endsWith(File.separator)) arg = arg.substring(0, arg.length() - 1);
-
-                String path = (arg.contains(":") ? arg : curDir + arg);
-                File localFile = new File(path.substring(
-                        path.lastIndexOf(File.separator) + 1));
-
-                // 发送请求
-                Object lock = new Object();
-                Random portRandom = new Random();
-
-                int port = portRandom.nextInt(1000) + 37000;
-                while (true) {
-                    try {
-                        ServerSocket socket = new ServerSocket(port, 1, sip.getAddress());
-                        socket.close();
-
-                        EventLoopGroup group = new NioEventLoopGroup(1);
-                        EventLoopGroup workerGroup = new NioEventLoopGroup(1);
-                        ServerBootstrap bootstrap = new ServerBootstrap();
-                        bootstrap.group(group, workerGroup)
-                                .channel(NioServerSocketChannel.class)
-                                .childHandler(new ChannelInitializer<SocketChannel>() {
-                                    @Override
-                                    protected void initChannel(SocketChannel ch) {
-                                        ChannelPipeline pipeline = ch.pipeline();
-
-                                        pipeline.addLast(new Lz4FrameDecoder());
-                                        pipeline.addLast(new DownloadFileHandler(localFile, lock));
-                                    }
-                                });
-                        ChannelFuture future = bootstrap.bind(new InetSocketAddress(sip.getAddress(), port))
-                                .syncUninterruptibly();
-
-                        byte[] filePath = path.getBytes();
-                        int pathLength = filePath.length;
-
-                        // 发送请求
-                        ByteBuf request = Unpooled.buffer(10 + pathLength);
-                        request.writeShort(DOWNLOAD_FILE);
-                        request.writeInt(pathLength);
-                        request.writeBytes(filePath);
-                        request.writeInt(port);
-                        student.sendRequest(getID(), request);
-                        request.release();
-
-                        try {
-                            System.out.print("下载中");
-
-                            synchronized (lock) {
-                                lock.wait();
-                            }
-
-                            System.out.println("\n下载完成");
-                        } catch (InterruptedException e) {
-                            System.out.println("\n下载失败: " + e.getMessage());
-                            return;
-                        } finally {
-                            future.channel().close().syncUninterruptibly();
-
-                            group.shutdownGracefully();
-                            workerGroup.shutdownGracefully();
-                        }
-
-                        break;
-                    } catch (BindException e) {
-                        port = portRandom.nextInt(1000) + 37000;
-                    } catch (IOException e) {
-                        System.out.println("下载失败: " + e.getMessage());
-                        return;
-                    }
+                if (download(args[1].trim())) {
+                    System.out.println("下载成功");
+                } else {
+                    System.out.println("下载失败");
                 }
             }
 
@@ -633,37 +278,11 @@ public class FileManagerModule implements Module {
                 }
 
                 // 锁定文件
-                Student student = StudentManager.getFirstSelectedStudent();
-                if (student == null) return;
-                String curDir = curDirs.get(student);
-
-                String arg = args[1].trim();
-                if (arg.startsWith(File.separator)) arg = arg.substring(1);
-                if (arg.endsWith(File.separator)) arg = arg.substring(0, arg.length() - 1);
-
-                String path = (arg.contains(":") ? arg : curDir + arg);
-                File localFile = new File(path.substring(
-                        path.lastIndexOf(File.separator) + 1));
-                byte[] bytes = path.getBytes();
-
-                // 发送请求
-                ByteBuf request = Unpooled.buffer(2 + bytes.length);
-                request.writeShort(LOCK_FILE);
-                request.writeBytes(bytes);
-                short timestamp = student.sendRequest(getID(), request);
-                request.release();
-
-                ByteBuf response = readResponse(student, timestamp);
-                if (response == null) return;
-
-                // 处理响应
-                switch (response.readShort()) {
-                    case SUCCESS -> System.out.println("锁定成功");
-                    case ERROR_NOT_FOUND_FILE -> System.out.println("文件不存在");
-                    case ERROR_LOCK_FILE -> System.out.println("锁定失败");
+                if (lock(args[1].trim())) {
+                    System.out.println("锁定成功");
+                } else {
+                    System.out.println("锁定失败");
                 }
-
-                response.release();
             }
 
             case "unlock" -> {
@@ -673,42 +292,545 @@ public class FileManagerModule implements Module {
                 }
 
                 // 解锁文件
-                Student student = StudentManager.getFirstSelectedStudent();
-                if (student == null) return;
-                String curDir = curDirs.get(student);
+                if (unlock(args[1].trim())) {
+                    System.out.println("解锁成功");
+                } else {
+                    System.out.println("解锁失败");
+                }
+            }
 
-                String arg = args[1].trim();
-                if (arg.startsWith(File.separator)) arg = arg.substring(1);
-                if (arg.endsWith(File.separator)) arg = arg.substring(0, arg.length() - 1);
-
-                String path = (arg.contains(":") ? arg : curDir + arg);
-                File localFile = new File(path.substring(
-                        path.lastIndexOf(File.separator) + 1));
-                byte[] bytes = path.getBytes();
-
-                // 发送请求
-                ByteBuf request = Unpooled.buffer(2 + bytes.length);
-                request.writeShort(UNLOCK_FILE);
-                request.writeBytes(bytes);
-                short timestamp = student.sendRequest(getID(), request);
-                request.release();
-
-                ByteBuf response = readResponse(student, timestamp);
-                if (response == null) return;
-
-                // 处理响应
-                switch (response.readShort()) {
-                    case SUCCESS -> System.out.println("解锁成功");
-                    case ERROR_NOT_FOUND_FILE -> System.out.println("文件不存在");
-                    case ERROR_LOCK_FILE -> System.out.println("解锁失败");
-                    case ERROR_INVALID_FILE -> System.out.println("文件未被锁定");
+            case "info" -> {
+                if (args.length != 2) {
+                    System.out.println("命令格式错误, 请使用格式: file info [name]");
+                    return;
                 }
 
-                response.release();
+                // 获取文件信息
+                try {
+                    File file = getFileInfo(args[1].trim());
+
+                    long size = file.length();
+                    String sizeStr = size < 1024 ? size + " B" : size < 1024 * 1024 ? size / 1024 + " KB" : size / (1024 * 1024) + " MB";
+
+                    System.out.println("文件名称: " + file.getName());
+                    System.out.println("文件大小: " + sizeStr);
+                    System.out.println("更改时间: " + new SimpleDateFormat("yyyy年MM月dd日HH点mm分ss秒s毫秒").format(new Date(file.lastModified())));
+                    System.out.println("是否可读: " + file.canRead());
+                    System.out.println("是否可写: " + file.canWrite());
+                    System.out.println("是否隐藏: " + file.isHidden());
+                    System.out.println("绝对路径: " + file.getAbsolutePath());
+                } catch (Exception e) {
+                    System.out.println("获取文件信息失败: " + e.getMessage());
+                }
             }
 
             default -> printHelp();
         }
+    }
+
+    public RemoteFileType getFileType(String arg) throws FileNotFoundException {
+        Student student = StudentManager.getFirstSelectedStudent();
+        if (student == null) return null;
+        String curDir = curDirs.get(student);
+
+        if (arg.startsWith(File.separator)) arg = arg.substring(1);
+        if (arg.endsWith(File.separator)) arg = arg.substring(0, arg.length() - 1);
+
+        String path = (arg.contains(":")? arg : curDir + arg);
+        if (!path.endsWith(File.separator)) path += File.separator;
+
+        byte[] bytes = path.getBytes();
+
+        // 发送请求
+        ByteBuf request = Unpooled.buffer(2 + bytes.length);
+        request.writeShort(GET_FILE_TYPE);
+        request.writeBytes(bytes);
+        short timestamp = student.sendRequest(getID(), request);
+        request.release();
+
+        ByteBuf response = readResponse(student, timestamp);
+        if (response == null) return null;
+
+        switch (response.readShort()) {
+            case SUCCESS -> {
+                RemoteFileType type = RemoteFileType.getRemoteFileType(response.readInt());
+                response.release();
+                return type;
+            }
+
+            case ERROR_NOT_FOUND_FILE -> {
+                response.release();
+                throw new FileNotFoundException("未找到" + path);
+            }
+
+            default -> {
+                response.release();
+                return null;
+            }
+        }
+    }
+
+    public boolean cd(String arg) {
+        Student student = StudentManager.getFirstSelectedStudent();
+        if (student == null) return false;
+        String curDir = curDirs.get(student);
+
+        if (arg.startsWith(File.separator)) arg = arg.substring(1);
+        if (arg.endsWith(File.separator)) arg = arg.substring(0, arg.length() - 1);
+        if (arg.equals("..")) {
+            try {
+                if (curDir.length() == 3) {
+                    curDirs.put(student, File.separator);
+                    return true;
+                }
+
+                curDir = curDir.substring(0, curDir
+                        .substring(0, curDir.length() - 1)
+                        .lastIndexOf(File.separator));
+
+                arg = "";
+            } catch (StringIndexOutOfBoundsException e) {
+                return false;
+            }
+        }
+
+        String path = (arg.contains(":")? arg : curDir + arg);
+        if (!path.endsWith(File.separator)) path += File.separator;
+
+        byte[] bytes = path.getBytes();
+
+        // 发送请求
+        try {
+            RemoteFileType type = getFileType(path);
+            if (type == null) return false;
+
+            if (type == RemoteFileType.DIRECTORY || type == RemoteFileType.ROOT) {
+                curDirs.put(student, path);
+                return true;
+            } else {
+                return false;
+            }
+        } catch (FileNotFoundException e) {
+            return false;
+        }
+    }
+
+    public List<RemoteFile> list() throws IOException {
+        Student student = StudentManager.getFirstSelectedStudent();
+        if (student == null) return null;
+        String curDir = curDirs.get(student);
+
+        byte[] bytes = curDir.getBytes();
+
+        // 发送请求
+        ByteBuf request = Unpooled.buffer(2 + bytes.length);
+        request.writeShort(LIST_FILES);
+        request.writeBytes(bytes);
+        short timestamp = student.sendRequest(getID(), request);
+        request.release();
+
+        ByteBuf response = readResponse(student, timestamp);
+        if (response == null) return null;
+
+        // 处理响应
+        ArrayList<RemoteFile> files = new ArrayList<>();
+        if (response.readShort() == SUCCESS) {
+            int count = response.readInt();
+            bytes = new byte[response.readableBytes()];
+            response.readBytes(bytes);
+
+            // 处理文件列表
+            GZIPInputStream gzipIn = new GZIPInputStream(new ByteArrayInputStream(bytes));
+            ObjectInputStream objIn = new ObjectInputStream(gzipIn);
+
+            for (int i = 0; i < count; i++) {
+                RemoteFile file = RemoteFile.readRemoteFileFromStream(objIn);
+                files.add(file);
+            }
+
+            objIn.close();
+            gzipIn.close();
+        } else {
+            return null;
+        }
+
+        files.sort((o1, o2) -> {
+            if (o1.type() == RemoteFileType.DIRECTORY && o2.type() == RemoteFileType.FILE) {
+                return -1;
+            }
+
+            if (o1.type() == RemoteFileType.FILE && o2.type() == RemoteFileType.DIRECTORY) {
+                return 1;
+            }
+
+            return o1.name().compareTo(o2.name());
+        });
+
+        response.release();
+        return files;
+    }
+
+    public boolean newFile(String arg) {
+        Student student = StudentManager.getFirstSelectedStudent();
+        if (student == null) return false;
+        String curDir = curDirs.get(student);
+
+        if (arg.startsWith(File.separator)) arg = arg.substring(1);
+        if (arg.endsWith(File.separator)) arg = arg.substring(0, arg.length() - 1);
+
+        String path = (arg.contains(":")? arg : curDir + arg);
+        byte[] bytes = path.getBytes();
+
+        // 发送请求
+        ByteBuf request = Unpooled.buffer(2 + bytes.length);
+        request.writeShort(NEW_FILE);
+        request.writeBytes(bytes);
+        short timestamp = student.sendRequest(getID(), request);
+        request.release();
+
+        ByteBuf response = readResponse(student, timestamp);
+        if (response == null) return false;
+
+        // 处理响应
+        boolean success = response.readShort() == SUCCESS;
+        response.release();
+        return success;
+    }
+
+    public boolean newDir(String arg) {
+        Student student = StudentManager.getFirstSelectedStudent();
+        if (student == null) return false;
+        String curDir = curDirs.get(student);
+
+        if (arg.startsWith(File.separator)) arg = arg.substring(1);
+        if (arg.endsWith(File.separator)) arg = arg.substring(0, arg.length() - 1);
+
+        String path = (arg.contains(":")? arg : curDir + arg);
+        byte[] bytes = path.getBytes();
+
+        // 发送请求
+        ByteBuf request = Unpooled.buffer(2 + bytes.length);
+        request.writeShort(NEW_DIRECTORY);
+        request.writeBytes(bytes);
+        short timestamp = student.sendRequest(getID(), request);
+        request.release();
+
+        ByteBuf response = readResponse(student, timestamp);
+        if (response == null) return false;
+
+        // 处理响应
+        boolean success = response.readShort() == SUCCESS;
+        response.release();
+        return success;
+    }
+
+    public boolean delete(String arg) {
+        Student student = StudentManager.getFirstSelectedStudent();
+        if (student == null) return false;
+        String curDir = curDirs.get(student);
+
+        if (arg.startsWith(File.separator)) arg = arg.substring(1);
+        if (arg.endsWith(File.separator)) arg = arg.substring(0, arg.length() - 1);
+
+        String path = (arg.contains(":")? arg : curDir + arg);
+        byte[] bytes = path.getBytes();
+
+        // 发送请求
+        ByteBuf request = Unpooled.buffer(2 + bytes.length);
+        request.writeShort(DELETE_FILE);
+        request.writeBytes(bytes);
+        short timestamp = student.sendRequest(getID(), request);
+        request.release();
+
+        ByteBuf response = readResponse(student, timestamp);
+        if (response == null) return false;
+
+        // 处理响应
+        boolean success = response.readShort() == SUCCESS;
+        response.release();
+        return success;
+    }
+
+    public boolean rename(String old, String new_) {
+        Student student = StudentManager.getFirstSelectedStudent();
+        if (student == null) return false;
+        String curDir = curDirs.get(student);
+
+        if (old.startsWith(File.separator)) old = old.substring(1);
+        if (old.endsWith(File.separator)) old = old.substring(0, old.length() - 1);
+
+        if (new_.startsWith(File.separator)) new_ = new_.substring(1);
+        if (new_.endsWith(File.separator)) new_ = new_.substring(0, new_.length() - 1);
+
+        String old_path = (old.contains(":")? old : curDir + old);
+        String new_path = (new_.contains(":")? new_ : curDir + new_);
+        byte[] old_bytes = old_path.getBytes();
+        byte[] new_bytes = new_path.getBytes();
+
+        ByteBuf request = Unpooled.buffer(10 + old_bytes.length + new_bytes.length);
+        request.writeShort(RENAME_FILE);
+        request.writeInt(old_bytes.length);
+        request.writeBytes(old_bytes);
+        request.writeInt(new_bytes.length);
+        request.writeBytes(new_bytes);
+        short timestamp = student.sendRequest(getID(), request);
+        request.release();
+
+        ByteBuf response = readResponse(student, timestamp);
+        if (response == null) return false;
+
+        // 处理响应
+        boolean success = response.readShort() == SUCCESS;
+        response.release();
+        return success;
+    }
+
+    public boolean upload(String arg) {
+        Student student = StudentManager.getFirstSelectedStudent();
+        if (student == null) return false;
+        String curDir = curDirs.get(student);
+        InetSocketAddress sip = (InetSocketAddress) student.getChannel().localAddress();
+
+        // 获取本地文件
+        if (arg.startsWith(File.separator)) arg = arg.substring(1);
+        if (arg.endsWith(File.separator)) arg = arg.substring(0, arg.length() - 1);
+        String path = (arg.contains(":")? arg : curDir + arg);
+
+        File localFile = new File(path);
+        if (!localFile.exists()) {
+            return false;
+        }
+
+        // 上传文件到当前目录
+        Object lock = new Object();
+        Random portRandom = new Random();
+
+        int port = portRandom.nextInt(1000) + 37000;
+        while (true) {
+            try {
+                ServerSocket socket = new ServerSocket(port, 1, sip.getAddress());
+                socket.close();
+
+                EventLoopGroup group = new NioEventLoopGroup(1);
+                EventLoopGroup workerGroup = new NioEventLoopGroup(1);
+                ServerBootstrap bootstrap = new ServerBootstrap();
+                bootstrap.group(group, workerGroup)
+                        .channel(NioServerSocketChannel.class)
+                        .childHandler(new ChannelInitializer<SocketChannel>() {
+                            @Override
+                            protected void initChannel(SocketChannel ch) {
+                                ChannelPipeline pipeline = ch.pipeline();
+
+                                pipeline.addLast(new Lz4FrameEncoder());
+                                pipeline.addLast(new UploadFileHandler(localFile, lock));
+                            }
+                        });
+                ChannelFuture future = bootstrap.bind(new InetSocketAddress(sip.getAddress(), port))
+                        .syncUninterruptibly();
+
+                byte[] fileName = (curDir + localFile.getName()).getBytes();
+                int nameLength = fileName.length;
+
+                // 发送请求
+                ByteBuf request = Unpooled.buffer(10 + nameLength);
+                request.writeShort(UPLOAD_FILE);
+                request.writeInt(nameLength);
+                request.writeBytes(fileName);
+                request.writeInt(port);
+                student.sendRequest(getID(), request);
+                request.release();
+
+                try {
+                    synchronized (lock) {
+                        lock.wait();
+                    }
+
+                    return true;
+                } catch (InterruptedException e) {
+                    return false;
+                } finally {
+                    future.channel().close().syncUninterruptibly();
+
+                    group.shutdownGracefully();
+                    workerGroup.shutdownGracefully();
+                }
+            } catch (BindException e) {
+                port = portRandom.nextInt(1000) + 37000;
+            } catch (IOException e) {
+                return false;
+            }
+        }
+    }
+
+    public boolean download(String arg) {
+        Student student = StudentManager.getFirstSelectedStudent();
+        if (student == null) return false;
+        String curDir = curDirs.get(student);
+        InetSocketAddress sip = (InetSocketAddress) student.getChannel().localAddress();
+
+        if (arg.startsWith(File.separator)) arg = arg.substring(1);
+        if (arg.endsWith(File.separator)) arg = arg.substring(0, arg.length() - 1);
+
+        String path = (arg.contains(":") ? arg : curDir + arg);
+        File localFile = new File(path.substring(
+                path.lastIndexOf(File.separator) + 1));
+
+        // 发送请求
+        Object lock = new Object();
+        Random portRandom = new Random();
+
+        int port = portRandom.nextInt(1000) + 37000;
+        while (true) {
+            try {
+                ServerSocket socket = new ServerSocket(port, 1, sip.getAddress());
+                socket.close();
+
+                EventLoopGroup group = new NioEventLoopGroup(1);
+                EventLoopGroup workerGroup = new NioEventLoopGroup(1);
+                ServerBootstrap bootstrap = new ServerBootstrap();
+                bootstrap.group(group, workerGroup)
+                        .channel(NioServerSocketChannel.class)
+                        .childHandler(new ChannelInitializer<SocketChannel>() {
+                            @Override
+                            protected void initChannel(SocketChannel ch) {
+                                ChannelPipeline pipeline = ch.pipeline();
+
+                                pipeline.addLast(new Lz4FrameDecoder());
+                                pipeline.addLast(new DownloadFileHandler(localFile, lock));
+                            }
+                        });
+                ChannelFuture future = bootstrap.bind(new InetSocketAddress(sip.getAddress(), port))
+                        .syncUninterruptibly();
+
+                byte[] filePath = path.getBytes();
+                int pathLength = filePath.length;
+
+                // 发送请求
+                ByteBuf request = Unpooled.buffer(10 + pathLength);
+                request.writeShort(DOWNLOAD_FILE);
+                request.writeInt(pathLength);
+                request.writeBytes(filePath);
+                request.writeInt(port);
+                student.sendRequest(getID(), request);
+                request.release();
+
+                try {
+                    synchronized (lock) {
+                        lock.wait();
+                    }
+
+                    return true;
+                } catch (InterruptedException e) {
+                    return false;
+                } finally {
+                    future.channel().close().syncUninterruptibly();
+
+                    group.shutdownGracefully();
+                    workerGroup.shutdownGracefully();
+                }
+            } catch (BindException e) {
+                port = portRandom.nextInt(1000) + 37000;
+            } catch (IOException e) {
+                return false;
+            }
+        }
+    }
+
+    public boolean lock(String arg) {
+        Student student = StudentManager.getFirstSelectedStudent();
+        if (student == null) return false;
+        String curDir = curDirs.get(student);
+
+        if (arg.startsWith(File.separator)) arg = arg.substring(1);
+        if (arg.endsWith(File.separator)) arg = arg.substring(0, arg.length() - 1);
+
+        String path = (arg.contains(":") ? arg : curDir + arg);
+        File localFile = new File(path.substring(
+                path.lastIndexOf(File.separator) + 1));
+        byte[] bytes = path.getBytes();
+
+        // 发送请求
+        ByteBuf request = Unpooled.buffer(2 + bytes.length);
+        request.writeShort(LOCK_FILE);
+        request.writeBytes(bytes);
+        short timestamp = student.sendRequest(getID(), request);
+        request.release();
+
+        ByteBuf response = readResponse(student, timestamp);
+        if (response == null) return false;
+
+        // 处理响应
+        boolean success = response.readShort() == SUCCESS;
+        response.release();
+        return success;
+    }
+
+    public boolean unlock(String arg) {
+        Student student = StudentManager.getFirstSelectedStudent();
+        if (student == null) return false;
+        String curDir = curDirs.get(student);
+
+        if (arg.startsWith(File.separator)) arg = arg.substring(1);
+        if (arg.endsWith(File.separator)) arg = arg.substring(0, arg.length() - 1);
+
+        String path = (arg.contains(":") ? arg : curDir + arg);
+        File localFile = new File(path.substring(
+                path.lastIndexOf(File.separator) + 1));
+        byte[] bytes = path.getBytes();
+
+        // 发送请求
+        ByteBuf request = Unpooled.buffer(2 + bytes.length);
+        request.writeShort(UNLOCK_FILE);
+        request.writeBytes(bytes);
+        short timestamp = student.sendRequest(getID(), request);
+        request.release();
+
+        ByteBuf response = readResponse(student, timestamp);
+        if (response == null) return false;
+
+        // 处理响应
+        boolean success = response.readShort() == SUCCESS;
+        response.release();
+        return success;
+    }
+
+    public File getFileInfo(String arg) throws IOException, ClassNotFoundException {
+        Student student = StudentManager.getFirstSelectedStudent();
+        if (student == null) return null;
+        String curDir = curDirs.get(student);
+
+        if (arg.startsWith(File.separator)) arg = arg.substring(1);
+        if (arg.endsWith(File.separator)) arg = arg.substring(0, arg.length() - 1);
+
+        String path = (arg.contains(":") ? arg : curDir + arg);
+        byte[] bytes = path.getBytes();
+
+        // 发送请求
+        ByteBuf request = Unpooled.buffer(2 + bytes.length);
+        request.writeShort(GET_FILE_INFO);
+        request.writeBytes(bytes);
+        short timestamp = student.sendRequest(getID(), request);
+        request.release();
+
+        ByteBuf response = readResponse(student, timestamp);
+        if (response == null) return null;
+
+        // 处理响应
+        File file = null;
+        if (response.readShort() == SUCCESS) {
+            byte[] data = new byte[response.readableBytes()];
+            response.readBytes(data);
+
+            ByteArrayInputStream byteIn = new ByteArrayInputStream(data);
+            ObjectInputStream objIn = new ObjectInputStream(byteIn);
+
+            file = (File) objIn.readObject();
+
+            objIn.close();
+            byteIn.close();
+        }
+
+        return file;
     }
 
     static class DownloadFileHandler extends ChannelInboundHandlerAdapter {

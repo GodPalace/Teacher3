@@ -10,7 +10,6 @@ import javafx.scene.image.Image;
 import org.pomo.toasterfx.model.impl.ToastTypes;
 
 import java.io.IOException;
-import java.net.SocketTimeoutException;
 
 public interface Module {
     int RESPONSE_HEAD_SIZE = 4;
@@ -37,32 +36,35 @@ public interface Module {
         return button;
     }
 
-    default ByteBuf readResponse(Student student, short timestamp) throws SocketTimeoutException {
-        short count = 0;
+    default ByteBuf readResponse(Student student, short timestamp) {
+        long start = System.currentTimeMillis();
+        long end = start + 10000;
 
-        while (!student.getResponses().containsKey(getID()) || !student.getResponses().get(getID()).containsKey(timestamp)) {
+        while (System.currentTimeMillis() - start < 10000) {
             try {
-                synchronized (this) {
-                    wait(50);
-                }
-
-                if (count++ > 100) {
-                    if (Main.isRunOnCmd()) {
-                        System.out.println(getName() + "获取响应超时");
-                    } else {
-                        Notification.show("错误", "获取响应超时: " + getName(), ToastTypes.FAIL);
-                    }
-
-                    return null;
+                synchronized (student.getLock()) {
+                    student.getLock().wait(Math.max(0, end - System.currentTimeMillis()));
                 }
             } catch (InterruptedException e) {
                 throw new RuntimeException(e);
             }
+
+            if (student.getResponses().containsKey(getID()) &&
+                    student.getResponses().get(getID()).containsKey(timestamp)) {
+
+                ByteBuf buf = student.getResponses().get(getID()).get(timestamp);
+                student.getResponses().get(getID()).remove(timestamp);
+
+                return buf;
+            }
         }
 
-        ByteBuf buf = student.getResponses().get(getID()).get(timestamp);
-        student.getResponses().get(getID()).remove(timestamp);
+        if (Main.isRunOnCmd()) {
+            System.out.println("获取响应超时, 请检查网络连接或重试.");
+        } else {
+            Notification.show("获取响应超时", "请检查网络连接或重试.", ToastTypes.FAIL);
+        }
 
-        return buf;
+        return null;
     }
 }

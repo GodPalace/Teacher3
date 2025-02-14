@@ -46,11 +46,7 @@ public class StudentManager {
     static {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             for (Student student : students) {
-                try {
-                    disconnect(student);
-                } catch (IOException e) {
-                    log.error("Error in StudentManager.shutdownHook, cause: {}", e.getMessage());
-                }
+                student.close();
             }
         }));
     }

@@ -17,6 +17,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.pomo.toasterfx.model.impl.ToastTypes;
 
 import java.net.InetSocketAddress;
+import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -29,6 +30,9 @@ public class Student {
 
     @Getter
     private final Channel channel;
+
+    @Getter
+    private final Object lock = new Object();
 
     @Getter
     private final ConcurrentHashMap<Short, ConcurrentHashMap<Short, ByteBuf>> responses = new ConcurrentHashMap<>();
@@ -116,8 +120,8 @@ public class Student {
     @Override
     public boolean equals(Object obj) {
         if (obj instanceof Student student) {
-            return ((InetSocketAddress) this.getChannel().remoteAddress()).getAddress()
-                    .equals(((InetSocketAddress) student.getChannel().remoteAddress()).getAddress());
+            return Arrays.equals(((InetSocketAddress) this.getChannel().remoteAddress()).getAddress().getAddress(),
+                    ((InetSocketAddress) student.getChannel().remoteAddress()).getAddress().getAddress());
         } else {
             return false;
         }
@@ -131,17 +135,24 @@ public class Student {
     class ReadHandler extends ChannelInboundHandlerAdapter {
         @Override
         public void channelRead(ChannelHandlerContext ctx, Object msg) {
-            if (msg instanceof ByteBuf buf) {
-                short moduleId = buf.readShort();
-                short timestamp = buf.readShort();
+            try {
+                if (msg instanceof ByteBuf buf) {
+                    short moduleId = buf.readShort();
+                    short timestamp = buf.readShort();
 
-                if (buf.readableBytes() > 0) {
-                    if (!responses.containsKey(moduleId)) {
-                        responses.put(moduleId, new ConcurrentHashMap<>());
+                    if (buf.readableBytes() > 0) {
+                        if (!responses.containsKey(moduleId)) {
+                            responses.put(moduleId, new ConcurrentHashMap<>());
+                        }
+
+                        responses.get(moduleId).put(timestamp, buf.retain());
+                        synchronized (lock) {
+                            lock.notifyAll();
+                        }
                     }
-
-                    responses.get(moduleId).put(timestamp, buf.retain());
                 }
+            } catch (Exception e) {
+                log.error("Error while reading message", e);
             }
         }
 

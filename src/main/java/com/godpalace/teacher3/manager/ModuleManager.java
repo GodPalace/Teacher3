@@ -62,9 +62,9 @@ public class ModuleManager {
 
     public static Parent getUI() {
         FlowPane root = new FlowPane();
+
         root.setHgap(0);
         root.setVgap(0);
-
         for (Button button : guiButtons.values()) {
             root.getChildren().add(button);
         }
