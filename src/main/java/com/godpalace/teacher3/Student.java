@@ -4,6 +4,8 @@ import com.godpalace.teacher3.fx.message.Notification;
 import com.godpalace.teacher3.manager.ModuleManager;
 import com.godpalace.teacher3.manager.StudentManager;
 import com.godpalace.teacher3.manager.ThreadPoolManager;
+import com.godpalace.teacher3.netty.DecryptHandler;
+import com.godpalace.teacher3.netty.EncryptHandler;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
@@ -54,6 +56,8 @@ public class Student {
         ChannelPipeline pipeline = channel.pipeline();
         pipeline.addLast(new Lz4FrameEncoder());
         pipeline.addLast(new Lz4FrameDecoder());
+        pipeline.addLast(new EncryptHandler());
+        pipeline.addLast(new DecryptHandler());
         pipeline.addLast(new Student.ReadHandler());
         this.channel = channel;
 
@@ -91,11 +95,11 @@ public class Student {
         }
     }
 
-    public boolean getStatuses(int id) {
+    public boolean getStatus(int id) {
         return statuses[id].get();
     }
 
-    public void setStatuses(int id, boolean status) {
+    public void setStatus(int id, boolean status) {
         this.statuses[id].set(status);
     }
 
@@ -169,6 +173,7 @@ public class Student {
 
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+            log.error("Error while handling message: {}", Arrays.toString(cause.getStackTrace()));
             ctx.close();
         }
     }

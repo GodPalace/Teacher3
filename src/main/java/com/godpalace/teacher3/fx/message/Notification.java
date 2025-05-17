@@ -16,20 +16,18 @@ public class Notification {
     }
 
     public static void show(String title, String message, ToastTypes type) {
-        if (toaster == null) {
-            toaster = new ToastBarToasterService();
-            toaster.initialize();
-        }
-
-        if (parameter == null) {
-            URL resource = Notification.class.getResource("/audio/MessageAudio.mp3");
-
-            ToastParameter.ToastParameterBuilder builder =
-                    ToastParameter.builder().timeout(Duration.seconds(5));
-            if (resource != null) builder = builder.audio(new SingleAudio(resource));
-            parameter = builder.build();
-        }
-
         toaster.bomb(title, message, parameter, type);
+    }
+
+    public static void initialize() {
+        toaster = new ToastBarToasterService();
+        toaster.initialize();
+
+        URL resource = Notification.class.getResource("/audio/MessageAudio.mp3");
+
+        ToastParameter.ToastParameterBuilder builder =
+                ToastParameter.builder().timeout(Duration.seconds(5));
+        if (resource != null) builder = builder.audio(new SingleAudio(resource));
+        parameter = builder.build();
     }
 }

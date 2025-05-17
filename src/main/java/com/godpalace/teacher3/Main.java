@@ -68,6 +68,36 @@ public class Main {
     public static void main(String[] args) {
         Locale.setDefault(Locale.CHINA);
 
+        GraphicsEnvironment environment = GraphicsEnvironment.getLocalGraphicsEnvironment();
+        if (args.length == 0 && !environment.isHeadlessInstance()) {
+            isRunOnCmd = false;
+        } else if (args[0].equals("--cmd") || args[0].equals("-c") || environment.isHeadlessInstance()) {
+            isRunOnCmd = true;
+        } else {
+            System.out.println("未知的启动参数, 请使用 --cmd 或 -c 启动命令行模式或者直接运行程序");
+            System.exit(0);
+        }
+
+        if (isRunOnCmd) {
+            cmdSetupAndLunch();
+        } else {
+            guiSetupAndLunch();
+        }
+    }
+
+    private static void guiSetupAndLunch() {
+        Application.launch(TeacherGUI.class);
+    }
+
+    private static void cmdSetupAndLunch() {
+        System.out.println("命令行模式启动中...");
+        initialize();
+
+        System.out.println("命令行模式启动成功!");
+        new TeacherCMD(System.in, System.out).start();
+    }
+
+    protected static void initialize() {
         try {
             long start = System.currentTimeMillis();
             log.info("Starting the initialization...");
@@ -81,28 +111,5 @@ public class Main {
         } finally {
             System.gc();
         }
-
-        GraphicsEnvironment environment = GraphicsEnvironment.getLocalGraphicsEnvironment();
-
-        if (args.length == 0 && !environment.isHeadlessInstance()) {
-            isRunOnCmd = false;
-            guiLunch();
-        } else if (args[0].equals("--cmd") || args[0].equals("-c") || environment.isHeadlessInstance()) {
-            isRunOnCmd = true;
-            cmdLunch();
-        } else {
-            System.out.println("未知的启动参数, 请使用 --cmd 或 -c 启动命令行模式或者直接运行程序");
-            System.exit(0);
-        }
-    }
-
-    private static void guiLunch() {
-        System.out.println("======GUI模式启动成功======");
-        Application.launch(TeacherGUI.class);
-    }
-
-    private static void cmdLunch() {
-        System.out.println("======命令行模式启动成功======");
-        new TeacherCMD(System.in, System.out).start();
     }
 }

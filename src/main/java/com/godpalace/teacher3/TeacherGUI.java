@@ -1,16 +1,12 @@
 package com.godpalace.teacher3;
 
 import com.github.kwhat.jnativehook.GlobalScreen;
-import com.github.kwhat.jnativehook.NativeInputEvent;
-import com.github.kwhat.jnativehook.keyboard.NativeKeyEvent;
-import com.github.kwhat.jnativehook.keyboard.NativeKeyListener;
 import com.godpalace.teacher3.fx.builder.SceneAutoConfigBuilder;
 import com.godpalace.teacher3.fx.menu.FXMenu;
 import com.godpalace.teacher3.fx.message.Notification;
-import com.godpalace.teacher3.manager.CssManager;
-import com.godpalace.teacher3.manager.MenuManager;
-import com.godpalace.teacher3.manager.ModuleManager;
-import com.godpalace.teacher3.manager.StudentManager;
+import com.godpalace.teacher3.manager.*;
+import com.godpalace.teacher3.util.StageUtil;
+import io.github.rctcwyvrn.blake3.Blake3;
 import javafx.application.Application;
 import javafx.application.HostServices;
 import javafx.application.Platform;
@@ -18,16 +14,17 @@ import javafx.geometry.Orientation;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
 import javafx.scene.Scene;
-import javafx.scene.control.Button;
-import javafx.scene.control.MenuBar;
-import javafx.scene.control.PasswordField;
-import javafx.scene.control.SplitPane;
+import javafx.scene.control.*;
 import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.Text;
 import javafx.stage.Stage;
+import javafx.stage.StageStyle;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.pomo.toasterfx.model.impl.ToastTypes;
@@ -41,7 +38,10 @@ public class TeacherGUI extends Application {
     private static Stage gui;
 
     @Getter
-    private static Image icon;
+    private static Image icon = null;
+
+    @Getter
+    private static Image bigIcon = null;
 
     @Getter
     private static boolean isLocked = false;
@@ -79,18 +79,15 @@ public class TeacherGUI extends Application {
 
         icon = new Image(stream);
         stream.close();
-    }
 
-    @Override
-    public void init() throws Exception {
-        initializeHook();
-        initializeIcon();
+        stream = TeacherGUI.class.getResourceAsStream("/IconBig.png");
+        if (stream == null) {
+            log.error("IconBig.png not found");
+            return;
+        }
 
-        CssManager.initializeCss();
-        MenuManager.initialize();
-        ModuleManager.initializeButtons();
-
-        services = getHostServices();
+        bigIcon = new Image(stream);
+        stream.close();
     }
 
     private Parent getContextPane() {
@@ -133,19 +130,24 @@ public class TeacherGUI extends Application {
         PasswordField passwordField = new PasswordField();
         Button unlockButton = new Button("解锁");
 
-        passwordField.setPromptText("请输入密码以解锁教师端");
+        passwordField.setPromptText("请输入密码以解锁");
         passwordField.setOnAction(event -> unlockButton.fire());
 
         unlockButton.setOnAction(event -> {
-            if (passwordField.getText().equals(TeacherDatabase.password)) {
+            Blake3 blake3 = Blake3.newInstance();
+            blake3.update(passwordField.getText().getBytes());
+            String hash = blake3.hexdigest();
+
+            if (hash.equals(TeacherDatabase.password)) {
                 Platform.runLater(() -> {
                     isLocked = false;
                     gui.setScene(mainScene);
 
+                    gui.setTitle("Teacher v3");
                     gui.sizeToScene();
                     gui.centerOnScreen();
 
-                    Notification.show("提升", "教师端已解锁", ToastTypes.SUCCESS);
+                    Notification.show("提示", "教师端已解锁", ToastTypes.SUCCESS);
                 });
             } else {
                 passwordField.setPromptText("密码错误，请重新输入");
@@ -166,44 +168,95 @@ public class TeacherGUI extends Application {
     }
 
     @Override
+    public void init() throws Exception {
+        initializeIcon();
+    }
+
+    @Override
     public void start(Stage stage) {
-        stage.setTitle("Teacher v3");
-        stage.getIcons().add(icon);
-        stage.setWidth(816);
-        stage.setHeight(600);
-        stage.setMinWidth(656);
-        stage.setMinHeight(560);
-        stage.setOnCloseRequest(event -> exit(0));
-        gui = stage;
+        // 初始化教师端加载界面
+        Stage initStage = new Stage();
 
-        Parent rootPane = getRootPane();
-        Parent lockPane = getLockPane();
+        initStage.setTitle("Loading...");
+        initStage.getIcons().add(icon);
+        initStage.initStyle(StageStyle.UNDECORATED);
+        initStage.setResizable(false);
+        initStage.setAlwaysOnTop(true);
+        initStage.setWidth(200);
+        initStage.setHeight(200);
 
-        mainScene = new SceneAutoConfigBuilder(rootPane, stage.getWidth(), stage.getHeight()).css().build();
-        hideScene = new SceneAutoConfigBuilder(lockPane, stage.getWidth(), stage.getHeight()).css().build();
-        stage.setScene(mainScene);
+        ImageView view = new ImageView(bigIcon);
+        view.setFitWidth(initStage.getWidth());
+        view.setFitHeight(initStage.getHeight());
+        BorderPane pane = new BorderPane();
+        pane.setCenter(view);
 
-        gui.show();
+        initStage.setScene(new Scene(pane));
+        StageUtil.setLocationToScreenCenter(initStage);
+        initStage.show();
 
-        GlobalScreen.addNativeKeyListener(new NativeKeyListener() {
-            @Override
-            public void nativeKeyPressed(NativeKeyEvent nativeEvent) {
-                if (nativeEvent.getKeyCode() == NativeKeyEvent.VC_D &&
-                        nativeEvent.getModifiers() == NativeInputEvent.ALT_L_MASK) {
+        Platform.runLater(() -> {
+            // 初始化
+            try {
+                Main.initialize();
 
+                initializeHook();
+                Notification.initialize();
+                CssManager.initializeCss();
+                MenuManager.initialize();
+                ModuleManager.initializeButtons();
+                services = getHostServices();
+            } catch (Exception e) {
+                log.error("Error while initializing the application", e);
+                exit(1);
+            }
+
+            // 启动GUI
+            stage.setTitle("Teacher v3");
+            stage.getIcons().add(icon);
+            stage.setWidth(816);
+            stage.setHeight(600);
+            stage.setMinWidth(656);
+            stage.setMinHeight(560);
+            stage.setOnCloseRequest(event -> {
+                if (!isLocked) {
+                    exit(0);
+                } else {
+                    event.consume();
+                }
+            });
+
+            gui = stage;
+
+            Parent rootPane = getRootPane();
+            Parent lockPane = getLockPane();
+
+            mainScene = new SceneAutoConfigBuilder(rootPane, stage.getWidth(), stage.getHeight()).css().build();
+            hideScene = new SceneAutoConfigBuilder(lockPane, stage.getWidth(), stage.getHeight()).css().build();
+            stage.setScene(mainScene);
+
+            initStage.close();
+            gui.sizeToScene();
+            gui.centerOnScreen();
+            gui.show();
+
+            // 添加锁定教师端快捷键
+            gui.addEventHandler(KeyEvent.KEY_PRESSED, event -> {
+                if (event.getCode().equals(KeyCode.D) && event.isAltDown()) {
                     if (!isLocked) {
                         Platform.runLater(() -> {
                             isLocked = true;
                             gui.setScene(hideScene);
 
+                            gui.setTitle("锁定");
                             gui.sizeToScene();
                             gui.centerOnScreen();
 
-                            Notification.show("提升", "教师端已锁定", ToastTypes.INFO);
+                            Notification.show("提示", "教师端已锁定", ToastTypes.INFO);
                         });
                     }
                 }
-            }
+            });
         });
     }
 
@@ -215,16 +268,26 @@ public class TeacherGUI extends Application {
 
     public static void exit(int status) {
         StackPane root = new StackPane();
+        HBox hBox = new HBox();
+
         Text text = new Text("正在退出教师端(退出代码: " + status + ")...");
+        ProgressIndicator indicator = new ProgressIndicator();
+
+        hBox.setAlignment(Pos.CENTER);
+        StackPane.setAlignment(indicator, Pos.CENTER);
+        root.getChildren().add(hBox);
+
+        indicator.setPrefSize(10, 10);
 
         text.setFont(new Font(16));
-
-        StackPane.setAlignment(text, Pos.CENTER);
-        root.getChildren().add(text);
+        hBox.getChildren().addAll(indicator, text);
 
         gui.setScene(new Scene(root, gui.getWidth(), gui.getHeight()));
         gui.sizeToScene();
         gui.centerOnScreen();
+
+        ThreadPoolManager.stop();
+        ThreadPoolManager.waitTillAllTasksDone();
 
         Platform.exit();
         System.exit(status);

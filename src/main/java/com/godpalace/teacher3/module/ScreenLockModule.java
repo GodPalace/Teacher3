@@ -107,33 +107,34 @@ public class ScreenLockModule implements Module {
     }
 
     @Override
-    public Button getGuiButton() {
-        Button button = createButton();
-
-        button.setOnAction(e -> {
-            Student student = StudentManager.getFirstSelectedStudent();
-
-            if (student != null) {
-                ByteBuf data = Unpooled.buffer(2);
-                data.writeShort((short) (!student.getStatuses(getID()) ? 1 : 0));
-
-                try {
-                    student.sendRequest(getID(), data);
-                    student.setStatuses(getID(), !student.getStatuses(getID()));
-                } catch (Exception ex) {
-                    log.error("Failed to execute command", ex);
-                } finally {
-                    data.release();
-                }
-            }
-        });
+    public Button createButton() {
+        Button button = Module.super.createButton();
 
         StudentManager.getSelectedStudents().addListener((ListChangeListener<Student>) change -> {
             Student student = StudentManager.getFirstSelectedStudent();
-            button.setText((student != null && student.getStatuses(getID())? "解锁屏幕" : "锁定屏幕"));
+            button.setText((student != null && student.getStatus(getID())? "解锁屏幕" : "锁定屏幕"));
         });
 
         return button;
+    }
+
+    @Override
+    public void onGuiButtonAction() {
+        Student student = StudentManager.getFirstSelectedStudent();
+
+        if (student != null) {
+            ByteBuf data = Unpooled.buffer(2);
+            data.writeShort((short) (!student.getStatus(getID()) ? 1 : 0));
+
+            try {
+                student.sendRequest(getID(), data);
+                student.setStatus(getID(), !student.getStatus(getID()));
+            } catch (Exception ex) {
+                log.error("Failed to execute command", ex);
+            } finally {
+                data.release();
+            }
+        }
     }
 
     @Override

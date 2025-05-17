@@ -33,8 +33,12 @@ public class ListenerModule implements Module {
     }
 
     @Override
-    public Button getGuiButton() {
+    public Button createButton() {
         return null;
+    }
+
+    @Override
+    public void onGuiButtonAction() {
     }
 
     @Override

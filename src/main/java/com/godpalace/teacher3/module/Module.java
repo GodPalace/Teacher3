@@ -7,19 +7,22 @@ import io.netty.buffer.ByteBuf;
 import javafx.scene.control.Button;
 import javafx.scene.control.Tooltip;
 import javafx.scene.image.Image;
+import javafx.scene.media.AudioClip;
 import org.pomo.toasterfx.model.impl.ToastTypes;
 
 import java.io.IOException;
+import java.util.Objects;
 
 public interface Module {
-    int RESPONSE_HEAD_SIZE = 4;
+    AudioClip audio = new AudioClip(Objects.requireNonNull(
+            Module.class.getResource("/audio/onButtonAction.mp3")).toExternalForm());
 
     short getID();
     String getName();
     String getTooltip();
     Image getStatusImage();
 
-    Button getGuiButton();
+    void onGuiButtonAction();
     String getCommand();
     void cmd(String[] args) throws IOException;
 
@@ -32,6 +35,10 @@ public interface Module {
         button.setTooltip(new Tooltip(getTooltip()));
         button.setPrefWidth(80);
         button.setPrefHeight(80);
+        button.setOnAction(event -> {
+            audio.play();
+            onGuiButtonAction();
+        });
 
         return button;
     }

@@ -15,6 +15,6 @@ public class SettingsMenu extends FXMenu {
 
     @Override
     public short getSortIndex() {
-        return 2;
+        return 3;
     }
 }

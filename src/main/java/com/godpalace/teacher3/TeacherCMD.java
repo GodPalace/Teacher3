@@ -2,6 +2,7 @@ package com.godpalace.teacher3;
 
 import com.godpalace.teacher3.manager.ModuleManager;
 import com.godpalace.teacher3.manager.StudentManager;
+import com.godpalace.teacher3.manager.ThreadPoolManager;
 import com.godpalace.teacher3.module.Module;
 import lombok.extern.slf4j.Slf4j;
 
@@ -98,6 +99,10 @@ public class TeacherCMD {
 
                     case "exit" -> {
                         System.out.println("正在退出教师端...");
+
+                        ThreadPoolManager.stop();
+                        ThreadPoolManager.waitTillAllTasksDone();
+
                         System.exit(0);
                     }
                 }

@@ -14,7 +14,6 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.compression.Lz4FrameDecoder;
 import io.netty.handler.codec.compression.Lz4FrameEncoder;
 import javafx.collections.ListChangeListener;
-import javafx.scene.control.Button;
 import javafx.scene.image.Image;
 import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
@@ -95,8 +94,9 @@ public class FileManagerModule implements Module {
     }
 
     @Override
-    public Button getGuiButton() {
-        return createButton();
+    public void onGuiButtonAction() {
+        FileStage stage = new FileStage(this);
+        stage.show();
     }
 
     @Override

@@ -1,19 +1,16 @@
 package com.godpalace.teacher3.module.file;
 
 import javafx.scene.control.ListCell;
-import org.kordamp.ikonli.boxicons.BoxiconsRegular;
-import org.kordamp.ikonli.javafx.FontIcon;
+import javafx.scene.image.ImageView;
 
-import java.io.File;
-
-public class FileCell extends ListCell<File> {
+public class FileCell extends ListCell<RemoteFile> {
     @Override
-    protected void updateItem(File item, boolean empty) {
+    protected void updateItem(RemoteFile item, boolean empty) {
         super.updateItem(item, empty);
 
         if (!empty && item != null) {
-            setText(item.getName());
-            setGraphic(new FontIcon((item.isDirectory()? BoxiconsRegular.FILE : BoxiconsRegular.DIRECTIONS)));
+            setText(item.name());
+            setGraphic(new ImageView(item.type().getIcon()));
         } else {
             setText(null);
             setGraphic(null);

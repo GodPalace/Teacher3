@@ -21,7 +21,7 @@ public class HelpStage extends Stage {
 
         try {
             if (icon == null) {
-                InputStream in = AboutStage.class.getResourceAsStream("/icon/Help.png");
+                InputStream in = AboutStage.class.getResourceAsStream("/icon/menu/Help.png");
 
                 if (in != null) {
                     icon = new Image(in);

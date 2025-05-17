@@ -52,7 +52,7 @@ public class ModuleManager {
 
     public static void initializeButtons() {
         for (Module module : shellMap.values()) {
-            Button button = module.getGuiButton();
+            Button button = module.createButton();
             if (button == null) continue;
 
             button.setDisable(true);

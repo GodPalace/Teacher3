@@ -21,6 +21,7 @@ import org.kordamp.ikonli.boxicons.BoxiconsRegular;
 import org.kordamp.ikonli.javafx.FontIcon;
 
 import java.io.IOException;
+import java.net.BindException;
 import java.net.InetSocketAddress;
 
 @Slf4j
@@ -127,6 +128,13 @@ public class ListenerAdderMenuStage extends Stage {
                 alert.setTitle("错误");
                 alert.setHeaderText("端口号错误");
                 alert.setContentText("请输入正确的端口号");
+                alert.showAndWait();
+            } catch (BindException ex) {
+                Alert alert = new Alert(Alert.AlertType.ERROR);
+                alert.setGraphic(new FontIcon(BoxiconsRegular.ERROR));
+                alert.setTitle("错误");
+                alert.setHeaderText("端口已被占用");
+                alert.setContentText("请选择其他端口");
                 alert.showAndWait();
             } catch (IOException ex) {
                 Alert alert = new Alert(Alert.AlertType.ERROR);

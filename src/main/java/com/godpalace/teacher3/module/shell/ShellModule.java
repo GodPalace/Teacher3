@@ -11,7 +11,6 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.compression.Lz4FrameDecoder;
-import javafx.scene.control.Button;
 import javafx.scene.image.Image;
 import lombok.extern.slf4j.Slf4j;
 
@@ -49,15 +48,9 @@ public class ShellModule implements Module {
     }
 
     @Override
-    public Button getGuiButton() {
-        Button button = createButton();
-
-        button.setOnAction(e -> {
-            ShellStage stage = new ShellStage(this);
-            stage.show();
-        });
-
-        return button;
+    public void onGuiButtonAction() {
+        ShellStage stage = new ShellStage(this);
+        stage.show();
     }
 
     @Override

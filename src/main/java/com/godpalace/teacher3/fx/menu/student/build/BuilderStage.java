@@ -8,10 +8,10 @@ import javafx.collections.FXCollections;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.Parent;
+import javafx.scene.control.*;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
 import javafx.scene.control.TextField;
-import javafx.scene.control.*;
 import javafx.scene.layout.AnchorPane;
 import javafx.scene.layout.BorderPane;
 import javafx.scene.layout.HBox;
@@ -33,7 +33,7 @@ public class BuilderStage extends Stage {
     public BuilderStage() {
         super();
 
-        this.setTitle("构建学生端");
+        this.setTitle("构建学生端(jar)");
         this.getIcons().add(TeacherGUI.getIcon());
         this.setWidth(400);
         this.setHeight(300);

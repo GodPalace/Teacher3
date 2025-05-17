@@ -5,6 +5,7 @@ import com.godpalace.teacher3.fx.menu.student.build.BuilderStage;
 import com.godpalace.teacher3.fx.menu.student.connect.ConnectionStage;
 import com.godpalace.teacher3.fx.message.Notification;
 import com.godpalace.teacher3.manager.StudentManager;
+import com.godpalace.teacher3.util.StageUtil;
 import javafx.scene.control.Alert;
 import org.kordamp.ikonli.boxicons.BoxiconsRegular;
 import org.kordamp.ikonli.javafx.FontIcon;
@@ -41,12 +42,13 @@ public class StudentMenu extends FXMenu {
 
         addMenuItem("直接连接", event -> {
             ConnectionStage stage = new ConnectionStage();
+            StageUtil.setLocationToScreenCenter(stage);
             stage.showAndWait();
         });
 
         addSeparator();
 
-        addMenuItem("构建学生端", event -> {
+        addMenuItem("构建学生端(jar)", event -> {
             BuilderStage stage = new BuilderStage();
             stage.showAndWait();
         });

@@ -5,7 +5,6 @@ import com.godpalace.teacher3.Student;
 import com.godpalace.teacher3.manager.StudentManager;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import javafx.scene.control.Button;
 import javafx.scene.image.Image;
 import lombok.extern.slf4j.Slf4j;
 
@@ -44,8 +43,7 @@ public class KeyboardModule implements Module {
     }
 
     @Override
-    public Button getGuiButton() {
-        return createButton();
+    public void onGuiButtonAction() {
     }
 
     @Override

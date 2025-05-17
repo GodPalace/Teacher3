@@ -5,7 +5,6 @@ import com.godpalace.teacher3.manager.StudentManager;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import javafx.scene.control.Alert;
-import javafx.scene.control.Button;
 import javafx.scene.control.TextInputDialog;
 import javafx.scene.image.Image;
 import lombok.extern.slf4j.Slf4j;
@@ -64,38 +63,32 @@ public class MessageModule implements Module {
     }
 
     @Override
-    public Button getGuiButton() {
-        Button button = createButton();
+    public void onGuiButtonAction() {
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.getDialogPane().setGraphic(new FontIcon(BoxiconsRegular.MESSAGE_SQUARE_DETAIL));
+        dialog.setGraphic(new FontIcon(BoxiconsRegular.MESSAGE_SQUARE_DETAIL));
+        dialog.setTitle("发送消息");
+        dialog.setHeaderText("请输入要发送的消息:");
+        dialog.showAndWait();
 
-        button.setOnAction(e -> {
-            TextInputDialog dialog = new TextInputDialog();
-            dialog.getDialogPane().setGraphic(new FontIcon(BoxiconsRegular.MESSAGE_SQUARE_DETAIL));
-            dialog.setGraphic(new FontIcon(BoxiconsRegular.MESSAGE_SQUARE_DETAIL));
-            dialog.setTitle("发送消息");
-            dialog.setHeaderText("请输入要发送的消息:");
-            dialog.showAndWait();
+        String message = dialog.getResult();
+        if (message == null || message.isEmpty()) return;
 
-            String message = dialog.getResult();
-            if (message == null || message.isEmpty()) return;
+        byte[] bytes = message.getBytes();
+        ByteBuf request = Unpooled.buffer(bytes.length);
+        request.writeBytes(bytes);
 
-            byte[] bytes = message.getBytes();
-            ByteBuf request = Unpooled.buffer(bytes.length);
-            request.writeBytes(bytes);
+        for (Student student : StudentManager.getSelectedStudents()) {
+            student.sendRequest(getID(), request);
+        }
 
-            for (Student student : StudentManager.getSelectedStudents()) {
-                student.sendRequest(getID(), request);
-            }
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setGraphic(new FontIcon(BoxiconsRegular.CHECK_CIRCLE));
+        alert.setTitle("消息发送成功");
+        alert.setHeaderText("消息发送成功!");
+        alert.show();
 
-            Alert alert = new Alert(Alert.AlertType.INFORMATION);
-            alert.setGraphic(new FontIcon(BoxiconsRegular.CHECK_CIRCLE));
-            alert.setTitle("消息发送成功");
-            alert.setHeaderText("消息发送成功!");
-            alert.show();
-
-            request.release();
-        });
-
-        return button;
+        request.release();
     }
 
     @Override

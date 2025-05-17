@@ -1,6 +1,8 @@
 package com.godpalace.student;
 
 import com.godpalace.student.manager.ThreadPoolManager;
+import com.godpalace.student.netty.DecryptHandler;
+import com.godpalace.student.netty.EncryptHandler;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -34,6 +36,8 @@ public class Teacher {
 
                         pipeline.addLast(new Lz4FrameEncoder());
                         pipeline.addLast(new Lz4FrameDecoder());
+                        pipeline.addLast(new EncryptHandler());
+                        pipeline.addLast(new DecryptHandler());
                         pipeline.addLast(new ReaderHandler());
                     }
                 });
@@ -47,6 +51,8 @@ public class Teacher {
     public Teacher(Channel channel) {
         channel.pipeline().addLast(new Lz4FrameEncoder());
         channel.pipeline().addLast(new Lz4FrameDecoder());
+        channel.pipeline().addLast(new EncryptHandler());
+        channel.pipeline().addLast(new DecryptHandler());
         channel.pipeline().addLast(new ReaderHandler());
 
         this.channel = channel;
@@ -72,6 +78,7 @@ public class Teacher {
 
         @Override
         public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+            log.error("Teacher {} caught exception: {}", ip, Arrays.toString(cause.getStackTrace()));
             ctx.close();
         }
     }

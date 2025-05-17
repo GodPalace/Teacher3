@@ -21,7 +21,7 @@ public class PasswordSettingsStage extends Stage {
 
         try {
             if (icon == null) {
-                InputStream in = AboutStage.class.getResourceAsStream("/icon/PasswordSettings.png");
+                InputStream in = AboutStage.class.getResourceAsStream("/icon/menu/PasswordSettings.png");
 
                 if (in != null) {
                     icon = new Image(in);

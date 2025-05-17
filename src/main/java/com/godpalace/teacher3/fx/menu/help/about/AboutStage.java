@@ -20,7 +20,7 @@ public class AboutStage extends Stage {
 
         try {
             if (icon == null) {
-                InputStream in = AboutStage.class.getResourceAsStream("/icon/About.png");
+                InputStream in = AboutStage.class.getResourceAsStream("/icon/menu/About.png");
 
                 if (in != null) {
                     icon = new Image(in);

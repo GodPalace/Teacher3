@@ -1,6 +1,7 @@
 package com.godpalace.teacher3.fx.menu.settings.password;
 
 import com.godpalace.teacher3.TeacherDatabase;
+import io.github.rctcwyvrn.blake3.Blake3;
 import javafx.fxml.FXML;
 import javafx.scene.control.Alert;
 import javafx.scene.control.PasswordField;
@@ -60,7 +61,11 @@ public class PasswordSettingsController {
             return;
         }
 
-        if (!oldPasswordText.getText().equals(TeacherDatabase.password)) {
+        Blake3 blake3 = Blake3.newInstance();
+        blake3.update(oldPasswordText.getText().getBytes());
+        String oldPasswordHash = blake3.hexdigest();
+
+        if (!oldPasswordHash.equals(TeacherDatabase.password)) {
             showErrorDialog("旧密码错误！");
             return;
         }
@@ -80,7 +85,10 @@ public class PasswordSettingsController {
             return;
         }
 
-        TeacherDatabase.password = newPasswordText.getText();
+        blake3 = Blake3.newInstance();
+        blake3.update(newPasswordText.getText().getBytes());
+
+        TeacherDatabase.password = blake3.hexdigest();
         showSuccessDialog();
 
         // 关闭窗口

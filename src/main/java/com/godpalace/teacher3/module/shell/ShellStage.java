@@ -40,7 +40,7 @@ public class ShellStage extends Stage {
 
         if (icon == null) {
             try {
-                InputStream in = ShellStage.class.getResourceAsStream("/icon/Shell.png");
+                InputStream in = ShellStage.class.getResourceAsStream("/icon/shell/Shell.png");
 
                 if (in != null) {
                     icon = new Image(in);
