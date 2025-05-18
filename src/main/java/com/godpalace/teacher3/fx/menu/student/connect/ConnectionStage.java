@@ -14,8 +14,6 @@ import javafx.stage.Stage;
 import org.kordamp.ikonli.boxicons.BoxiconsRegular;
 import org.kordamp.ikonli.javafx.FontIcon;
 
-import java.awt.*;
-
 public class ConnectionStage extends Stage {
     public ConnectionStage() {
         super();
@@ -69,8 +67,6 @@ public class ConnectionStage extends Stage {
                     alert.setContentText("请检查网络连接或输入的IP地址是否正确.");
                     alert.showAndWait();
                 } else {
-                    Toolkit.getDefaultToolkit().beep();
-
                     Alert alert = new Alert(Alert.AlertType.INFORMATION);
                     alert.setGraphic(new FontIcon(BoxiconsRegular.CHECK));
                     alert.setTitle("连接成功");

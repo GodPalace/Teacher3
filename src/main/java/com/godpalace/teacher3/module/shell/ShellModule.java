@@ -81,7 +81,7 @@ public class ShellModule implements Module {
         });
     }
 
-    protected void runShell(Student student, String cmd, Listener listener) {
+    public void runShell(Student student, String cmd, Listener listener) {
         Object lock = new Object();
 
         int port = random.nextInt(1000) + 37000;
@@ -166,7 +166,7 @@ public class ShellModule implements Module {
         }
     }
 
-    protected interface Listener {
+    public interface Listener {
         default void onShellResult(String result) {
         }
 

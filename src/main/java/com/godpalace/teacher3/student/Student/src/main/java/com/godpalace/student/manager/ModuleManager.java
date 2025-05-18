@@ -41,8 +41,12 @@ public class ModuleManager {
                     modules.put(id, module);
                     log.debug("Loaded module: {}", className);
                 } else {
-                    module.execute(null, null);
-                    log.debug("Loaded local module: {}", className);
+                    try {
+                        module.execute(null, null);
+                        log.debug("Loaded local module: {}", className);
+                    } catch (Exception e) {
+                        log.error("Error executing local module: {}", className, e);
+                    }
                 }
             }
         } catch (Exception e) {

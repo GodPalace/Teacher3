@@ -144,7 +144,7 @@ public class StudentManager {
     }
 
     public static Student connect(String ip) throws Exception {
-        InetSocketAddress address = new InetSocketAddress(ip, 37000);
+        InetSocketAddress address = new InetSocketAddress(ip, Main.MAIN_PORT);
         if (!address.getAddress().isReachable(5000))
             throw new SocketException(ip + "不存在或不可到达");
 

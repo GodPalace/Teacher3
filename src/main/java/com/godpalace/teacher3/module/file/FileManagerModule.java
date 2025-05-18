@@ -151,8 +151,14 @@ public class FileManagerModule implements Module {
                     return;
                 }
 
+                Student student = StudentManager.getFirstSelectedStudent();
+                if (student == null) {
+                    System.out.println("未选择学生");
+                    return;
+                }
+
                 // 切换当前目录
-                if (cd(args[1].trim())) {
+                if (cd(student, args[1].trim())) {
                     System.out.println("切换成功");
                 } else {
                     System.out.println("切换失败");
@@ -176,8 +182,14 @@ public class FileManagerModule implements Module {
                     return;
                 }
 
+                Student student = StudentManager.getFirstSelectedStudent();
+                if (student == null) {
+                    System.out.println("未选择学生");
+                    return;
+                }
+
                 // 列出当前目录文件
-                List<RemoteFile> files = list();
+                List<RemoteFile> files = list(student);
                 if (files != null) {
                     for (RemoteFile file : files) {
                         System.out.println("[" + file.type() + "] " + file.name());
@@ -193,8 +205,14 @@ public class FileManagerModule implements Module {
                     return;
                 }
 
+                Student student = StudentManager.getFirstSelectedStudent();
+                if (student == null) {
+                    System.out.println("未选择学生");
+                    return;
+                }
+
                 // 创建新文件
-                if (newFile(args[1].trim())) {
+                if (newFile(student, args[1].trim())) {
                     System.out.println("创建成功");
                 } else {
                     System.out.println("创建失败");
@@ -207,8 +225,14 @@ public class FileManagerModule implements Module {
                     return;
                 }
 
+                Student student = StudentManager.getFirstSelectedStudent();
+                if (student == null) {
+                    System.out.println("未选择学生");
+                    return;
+                }
+
                 // 创建新目录
-                if (newDir(args[1].trim())) {
+                if (newDir(student, args[1].trim())) {
                     System.out.println("创建成功");
                 } else {
                     System.out.println("创建失败");
@@ -221,8 +245,14 @@ public class FileManagerModule implements Module {
                     return;
                 }
 
+                Student student = StudentManager.getFirstSelectedStudent();
+                if (student == null) {
+                    System.out.println("未选择学生");
+                    return;
+                }
+
                 // 删除文件
-                if (delete(args[1].trim())) {
+                if (delete(student, args[1].trim())) {
                     System.out.println("删除成功");
                 } else {
                     System.out.println("删除失败");
@@ -235,8 +265,14 @@ public class FileManagerModule implements Module {
                     return;
                 }
 
+                Student student = StudentManager.getFirstSelectedStudent();
+                if (student == null) {
+                    System.out.println("未选择学生");
+                    return;
+                }
+
                 // 重命名文件
-                if (rename(args[1].trim(), args[2].trim())) {
+                if (rename(student, args[1].trim(), args[2].trim())) {
                     System.out.println("重命名成功");
                 } else {
                     System.out.println("重命名失败");
@@ -249,8 +285,14 @@ public class FileManagerModule implements Module {
                     return;
                 }
 
+                Student student = StudentManager.getFirstSelectedStudent();
+                if (student == null) {
+                    System.out.println("未选择学生");
+                    return;
+                }
+
                 // 上传文件到当前目录
-                if (upload(args[1].trim())) {
+                if (upload(student, args[1].trim())) {
                     System.out.println("上传成功");
                 } else {
                     System.out.println("上传失败");
@@ -263,8 +305,14 @@ public class FileManagerModule implements Module {
                     return;
                 }
 
+                Student student = StudentManager.getFirstSelectedStudent();
+                if (student == null) {
+                    System.out.println("未选择学生");
+                    return;
+                }
+
                 // 下载文件到本地
-                if (download(args[1].trim())) {
+                if (download(student, args[1].trim())) {
                     System.out.println("下载成功");
                 } else {
                     System.out.println("下载失败");
@@ -277,8 +325,14 @@ public class FileManagerModule implements Module {
                     return;
                 }
 
+                Student student = StudentManager.getFirstSelectedStudent();
+                if (student == null) {
+                    System.out.println("未选择学生");
+                    return;
+                }
+
                 // 锁定文件
-                if (lock(args[1].trim())) {
+                if (lock(student, args[1].trim())) {
                     System.out.println("锁定成功");
                 } else {
                     System.out.println("锁定失败");
@@ -291,8 +345,14 @@ public class FileManagerModule implements Module {
                     return;
                 }
 
+                Student student = StudentManager.getFirstSelectedStudent();
+                if (student == null) {
+                    System.out.println("未选择学生");
+                    return;
+                }
+
                 // 解锁文件
-                if (unlock(args[1].trim())) {
+                if (unlock(student, args[1].trim())) {
                     System.out.println("解锁成功");
                 } else {
                     System.out.println("解锁失败");
@@ -305,9 +365,15 @@ public class FileManagerModule implements Module {
                     return;
                 }
 
+                Student student = StudentManager.getFirstSelectedStudent();
+                if (student == null) {
+                    System.out.println("未选择学生");
+                    return;
+                }
+
                 // 获取文件信息
                 try {
-                    File file = getFileInfo(args[1].trim());
+                    File file = getFileInfo(student, args[1].trim());
 
                     long size = file.length();
                     String sizeStr = size < 1024 ? size + " B" : size < 1024 * 1024 ? size / 1024 + " KB" : size / (1024 * 1024) + " MB";
@@ -328,8 +394,7 @@ public class FileManagerModule implements Module {
         }
     }
 
-    public RemoteFileType getFileType(String arg) throws FileNotFoundException {
-        Student student = StudentManager.getFirstSelectedStudent();
+    public RemoteFileType getFileType(Student student, String arg) throws FileNotFoundException {
         if (student == null) return null;
         String curDir = curDirs.get(student);
 
@@ -370,8 +435,7 @@ public class FileManagerModule implements Module {
         }
     }
 
-    public boolean cd(String arg) {
-        Student student = StudentManager.getFirstSelectedStudent();
+    public boolean cd(Student student, String arg) {
         if (student == null) return false;
         String curDir = curDirs.get(student);
 
@@ -401,7 +465,7 @@ public class FileManagerModule implements Module {
 
         // 发送请求
         try {
-            RemoteFileType type = getFileType(path);
+            RemoteFileType type = getFileType(student, path);
             if (type == null) return false;
 
             if (type == RemoteFileType.DIRECTORY || type == RemoteFileType.ROOT) {
@@ -415,8 +479,7 @@ public class FileManagerModule implements Module {
         }
     }
 
-    public List<RemoteFile> list() throws IOException {
-        Student student = StudentManager.getFirstSelectedStudent();
+    public List<RemoteFile> list(Student student) throws IOException {
         if (student == null) return null;
         String curDir = curDirs.get(student);
 
@@ -470,8 +533,7 @@ public class FileManagerModule implements Module {
         return files;
     }
 
-    public boolean newFile(String arg) {
-        Student student = StudentManager.getFirstSelectedStudent();
+    public boolean newFile(Student student, String arg) {
         if (student == null) return false;
         String curDir = curDirs.get(student);
 
@@ -497,8 +559,7 @@ public class FileManagerModule implements Module {
         return success;
     }
 
-    public boolean newDir(String arg) {
-        Student student = StudentManager.getFirstSelectedStudent();
+    public boolean newDir(Student student, String arg) {
         if (student == null) return false;
         String curDir = curDirs.get(student);
 
@@ -524,8 +585,7 @@ public class FileManagerModule implements Module {
         return success;
     }
 
-    public boolean delete(String arg) {
-        Student student = StudentManager.getFirstSelectedStudent();
+    public boolean delete(Student student, String arg) {
         if (student == null) return false;
         String curDir = curDirs.get(student);
 
@@ -551,8 +611,7 @@ public class FileManagerModule implements Module {
         return success;
     }
 
-    public boolean rename(String old, String new_) {
-        Student student = StudentManager.getFirstSelectedStudent();
+    public boolean rename(Student student, String old, String new_) {
         if (student == null) return false;
         String curDir = curDirs.get(student);
 
@@ -585,8 +644,7 @@ public class FileManagerModule implements Module {
         return success;
     }
 
-    public boolean upload(String arg) {
-        Student student = StudentManager.getFirstSelectedStudent();
+    public boolean upload(Student student, String arg) {
         if (student == null) return false;
         String curDir = curDirs.get(student);
         InetSocketAddress sip = (InetSocketAddress) student.getChannel().localAddress();
@@ -662,8 +720,7 @@ public class FileManagerModule implements Module {
         }
     }
 
-    public boolean download(String arg) {
-        Student student = StudentManager.getFirstSelectedStudent();
+    public boolean download(Student student, String arg) {
         if (student == null) return false;
         String curDir = curDirs.get(student);
         InetSocketAddress sip = (InetSocketAddress) student.getChannel().localAddress();
@@ -736,8 +793,7 @@ public class FileManagerModule implements Module {
         }
     }
 
-    public boolean lock(String arg) {
-        Student student = StudentManager.getFirstSelectedStudent();
+    public boolean lock(Student student, String arg) {
         if (student == null) return false;
         String curDir = curDirs.get(student);
 
@@ -765,8 +821,7 @@ public class FileManagerModule implements Module {
         return success;
     }
 
-    public boolean unlock(String arg) {
-        Student student = StudentManager.getFirstSelectedStudent();
+    public boolean unlock(Student student, String arg) {
         if (student == null) return false;
         String curDir = curDirs.get(student);
 
@@ -794,8 +849,7 @@ public class FileManagerModule implements Module {
         return success;
     }
 
-    public File getFileInfo(String arg) throws IOException, ClassNotFoundException {
-        Student student = StudentManager.getFirstSelectedStudent();
+    public File getFileInfo(Student student, String arg) throws IOException, ClassNotFoundException {
         if (student == null) return null;
         String curDir = curDirs.get(student);
 

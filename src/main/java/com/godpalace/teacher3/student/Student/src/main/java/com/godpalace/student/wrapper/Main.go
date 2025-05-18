@@ -29,14 +29,6 @@ func main() {
 		log.Fatalln("创建临时目录失败:", err)
 	}
 
-	defer func(path string) {
-		err := os.RemoveAll(path)
-
-		if err != nil {
-			log.Printf("清理临时目录失败: %v", err)
-		}
-	}(tmpDir)
-
 	go jar(tmpDir)
 	jre(tmpDir)
 
@@ -157,13 +149,16 @@ func extractFile(f *zip.File, destPath string) error {
 func runJavaJar(jarPath, tempDir string) {
 	java := func() string {
 		if strings.Contains(runtime.GOOS, "win") {
-			return "java.exe"
+			return "javaw.exe"
 		} else {
-			return "java"
+			return "javaw"
 		}
 	}()
 
 	command := filepath.Join(tempDir, "jre", "bin", java)
-	fmt.Println("执行命令:", command+" -jar "+jarPath)
-	_ = exec.Command(command, "-jar", jarPath).Run()
+	cmd := exec.Command(command, "-Dio.netty.tryReflectionSetAccessible=true --add-opens java.base/jdk.internal.reflect=ALL-UNNAMED --add-opens java.base/jdk.internal.misc=ALL-UNNAMED --add-opens java.base/java.nio=ALL-UNNAMED --add-opens java.base/java.lang=ALL-UNNAMED --add-opens java.base/sun.reflect=ALL-UNNAMED", "-jar", jarPath)
+
+	if cmd.Run() != nil {
+		_ = cmd.Run()
+	}
 }

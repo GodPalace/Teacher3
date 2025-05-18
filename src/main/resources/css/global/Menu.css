@@ -47,3 +47,16 @@
     -fx-opacity: 0.5;
     -fx-color: #999999;
 }
+
+.menu-button .menu-item {
+    -fx-background-color: #f0f0f0;
+    -fx-border-radius: 5px;
+    -fx-background-radius: 5px;
+}
+.menu-button .menu-item:hover {
+    -fx-background-color: #e0e0e0;
+}
+
+.context-menu {
+    -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.2), 5, 0, 0, 2);
+}

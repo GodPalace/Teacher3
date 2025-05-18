@@ -16,9 +16,13 @@ public class Main {
     public static final String IPV4_MULTICAST_GROUP = "224.3.7.1";
     public static final String IPV6_MULTICAST_GROUP = "ff02::307:1";
 
+    public static final String IPV4_RESCAN_GROUP = "224.3.7.2";
+    public static final String IPV6_RESCAN_GROUP = "ff02::307:2";
+
     public static final int
-            MAIN_PORT = 37000,
-            SCAN_PORT = 37001;
+            MAIN_PORT   = 37000,
+            SCAN_PORT   = 37001,
+            RESCAN_PORT = 37002;
 
     @Getter
     private static final HashMap<InetAddress, NetworkInterface> ipv4s = new HashMap<>();
@@ -60,6 +64,9 @@ public class Main {
                 }
             }
         }
+
+        // Initialize the rescan listener
+        RescanListener.initialize();
 
         // Initialize modules
         ModuleManager.initialize();

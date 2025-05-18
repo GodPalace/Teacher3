@@ -1,0 +1,17 @@
+<component name="ProjectRunConfigurationManager">
+  <configuration default="false" name="Student Build Exe" type="ShConfigurationType">
+    <option name="SCRIPT_TEXT" value="go build -ldflags &quot;-s -w -H=windowsgui&quot; Main.go &amp;&amp; copy D:\Object\Teacher3\src\main\java\com\godpalace\teacher3\student\Student\src\main\java\com\godpalace\student\wrapper\Main.exe D:\Object\Teacher3\src\main\resources\Student.exe" />
+    <option name="INDEPENDENT_SCRIPT_PATH" value="false" />
+    <option name="SCRIPT_PATH" value="$PROJECT_DIR$/src/main/java/com/godpalace/teacher3/student/Student/src/main/java/com/godpalace/student/wrapper/build.bat" />
+    <option name="SCRIPT_OPTIONS" value="" />
+    <option name="INDEPENDENT_SCRIPT_WORKING_DIRECTORY" value="false" />
+    <option name="SCRIPT_WORKING_DIRECTORY" value="$PROJECT_DIR$/src/main/java/com/godpalace/teacher3/student/Student/src/main/java/com/godpalace/student/wrapper" />
+    <option name="INDEPENDENT_INTERPRETER_PATH" value="false" />
+    <option name="INTERPRETER_PATH" value="C:/WINDOWS/System32/WindowsPowerShell/v1.0/powershell.exe" />
+    <option name="INTERPRETER_OPTIONS" value="" />
+    <option name="EXECUTE_IN_TERMINAL" value="true" />
+    <option name="EXECUTE_SCRIPT_FILE" value="true" />
+    <envs />
+    <method v="2" />
+  </configuration>
+</component>

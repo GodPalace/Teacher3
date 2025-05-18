@@ -25,7 +25,7 @@ public class ResponseScanModule implements Module {
     @Override
     public ByteBuf execute(Teacher teacher, ByteBuf data) {
         for (Map.Entry<InetAddress, NetworkInterface> entry : Main.getAddresses().entrySet()) {
-            ThreadPoolManager.getExecutor().execute(() -> {
+            new Thread(() -> {
                 InetAddress ipKey = entry.getKey();
                 InetSocketAddress address = new InetSocketAddress(ipKey, Main.SCAN_PORT);
                 InetSocketAddress group = new InetSocketAddress(
@@ -49,8 +49,7 @@ public class ResponseScanModule implements Module {
                                     // 表示教师希望连接
                                     boolean hasSameTeacher = false;
                                     for (Teacher t : NetworkCore.getTeachers()) {
-                                        InetSocketAddress addr =
-                                                (InetSocketAddress) t.getChannel().remoteAddress();
+                                        InetSocketAddress addr = (InetSocketAddress) t.getChannel().remoteAddress();
 
                                         if (addr.getAddress().equals(packet.getAddress())) {
                                             hasSameTeacher = true;
@@ -64,9 +63,7 @@ public class ResponseScanModule implements Module {
 
                                     for (NetworkCore core : Main.getCores()) {
                                         if (core.getAddr().equals(packet.getAddress())) {
-                                            log.debug("Added new teacher {} to core {}",
-                                                    newTeacher.getIp(), packet.getAddress());
-
+                                            log.debug("Added new teacher {} to core {}", newTeacher.getIp(), packet.getAddress());
                                             break;
                                         }
                                     }
@@ -82,7 +79,7 @@ public class ResponseScanModule implements Module {
                 } catch (Exception e) {
                     log.error("Error while scanning response from {}", ipKey, e);
                 }
-            });
+            }).start();
         }
 
         return null;

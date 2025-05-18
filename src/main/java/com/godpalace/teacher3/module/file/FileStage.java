@@ -15,6 +15,7 @@ import java.io.InputStream;
 public class FileStage extends Stage {
     private final FileManagerModule module;
     private static Image icon = null;
+    private FileListView fileListView;
 
     public FileStage(FileManagerModule module) {
         super();
@@ -47,7 +48,17 @@ public class FileStage extends Stage {
 
     private Parent initializeComponents() {
         BorderPane root = new BorderPane();
-        root.setCenter(new FileListView(module));
+
+        fileListView = new FileListView(module);
+        root.setCenter(fileListView);
+        root.setTop(fileListView.getDesktopMenu());
+
         return root;
+    }
+
+    @Override
+    public void hide() {
+        fileListView.close();
+        super.hide();
     }
 }

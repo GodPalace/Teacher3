@@ -14,6 +14,10 @@ public record RemoteFile(String path, RemoteFileType type) implements Serializab
     }
 
     public String name() {
+        if (type == RemoteFileType.ROOT) {
+            return path;
+        }
+
         return path.substring(path.lastIndexOf(File.separator) + 1);
     }
 }

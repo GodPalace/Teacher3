@@ -9,7 +9,7 @@ import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 public class ThreadPoolManager {
-    private static final int THREAD_COUNT = 10;
+    private static final int THREAD_COUNT = Runtime.getRuntime().availableProcessors() * 4;
 
     @Getter
     private static final ThreadPoolExecutor executor;

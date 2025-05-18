@@ -270,7 +270,7 @@ public class TeacherGUI extends Application {
         StackPane root = new StackPane();
         HBox hBox = new HBox();
 
-        Text text = new Text("正在退出教师端(退出代码: " + status + ")...");
+        Text text = new Text("正在等待教师端清理(退出代码: " + status + ")...");
         ProgressIndicator indicator = new ProgressIndicator();
 
         hBox.setAlignment(Pos.CENTER);
@@ -287,7 +287,7 @@ public class TeacherGUI extends Application {
         gui.centerOnScreen();
 
         ThreadPoolManager.stop();
-        ThreadPoolManager.waitTillAllTasksDone();
+        ThreadPoolManager.waitTillAllTasksDone(3000);
 
         Platform.exit();
         System.exit(status);

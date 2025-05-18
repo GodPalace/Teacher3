@@ -30,10 +30,16 @@ public class ThreadPoolManager {
         executor.shutdown();
     }
 
-    public static void waitTillAllTasksDone() {
+    public static void waitTillAllTasksDone(long timeout) {
         try {
             while (executor.getActiveCount() > 0) {
                 Thread.sleep(1000);
+                timeout -= 1000;
+
+                if (timeout <= 0) {
+                    executor.shutdownNow();
+                    return;
+                }
             }
         } catch (InterruptedException e) {
             log.error("Error while waiting for executor to terminate", e);

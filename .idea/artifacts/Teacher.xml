@@ -2,7 +2,6 @@
   <artifact type="jar" name="Teacher">
     <output-path>$PROJECT_DIR$/out/artifacts/Teacher</output-path>
     <root id="archive" name="Teacher.jar">
-      <element id="module-output" name="Teacher3" />
       <element id="artifact" artifact-name="Student" />
       <element id="extracted-dir" path="$MAVEN_REPOSITORY$/com/github/kwhat/jnativehook/2.2.2/jnativehook-2.2.2.jar" path-in-jar="/" />
       <element id="extracted-dir" path="$MAVEN_REPOSITORY$/com/github/l42111996/kcp-base/1.6/kcp-base-1.6.jar" path-in-jar="/" />
@@ -33,6 +32,7 @@
       <element id="extracted-dir" path="$MAVEN_REPOSITORY$/org/openjfx/javafx-fxml/17.0.2/javafx-fxml-17.0.2-win.jar" path-in-jar="/" />
       <element id="extracted-dir" path="$MAVEN_REPOSITORY$/org/openjfx/javafx-media/17.0.2/javafx-media-17.0.2.jar" path-in-jar="/" />
       <element id="extracted-dir" path="$MAVEN_REPOSITORY$/org/openjfx/javafx-media/17.0.2/javafx-media-17.0.2-win.jar" path-in-jar="/" />
+      <element id="module-output" name="Teacher3" />
     </root>
   </artifact>
 </component>

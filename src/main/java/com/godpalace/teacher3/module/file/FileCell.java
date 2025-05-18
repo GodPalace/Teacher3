@@ -9,8 +9,12 @@ public class FileCell extends ListCell<RemoteFile> {
         super.updateItem(item, empty);
 
         if (!empty && item != null) {
+            ImageView view = new ImageView(item.type().getIcon());
+            view.setFitHeight(32);
+            view.setFitWidth(32);
+
             setText(item.name());
-            setGraphic(new ImageView(item.type().getIcon()));
+            setGraphic(view);
         } else {
             setText(null);
             setGraphic(null);

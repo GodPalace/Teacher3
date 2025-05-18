@@ -101,7 +101,7 @@ public class TeacherCMD {
                         System.out.println("正在退出教师端...");
 
                         ThreadPoolManager.stop();
-                        ThreadPoolManager.waitTillAllTasksDone();
+                        ThreadPoolManager.waitTillAllTasksDone(3000);
 
                         System.exit(0);
                     }

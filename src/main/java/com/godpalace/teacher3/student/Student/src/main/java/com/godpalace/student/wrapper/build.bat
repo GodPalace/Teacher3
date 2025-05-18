@@ -1,0 +1,2 @@
+go build -ldflags "-s -w -H=windowsgui" -o Student.exe Main.go
+move D:\Object\Teacher3\src\main\java\com\godpalace\teacher3\student\Student\src\main\java\com\godpalace\student\wrapper\Student.exe D:\Object\Teacher3\src\main\resources

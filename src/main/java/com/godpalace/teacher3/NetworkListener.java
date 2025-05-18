@@ -104,12 +104,10 @@ public class NetworkListener {
                 lock.lock();
 
                 if (Main.isRunOnCmd()) {
-                    System.out.println("\n新的学生连接: " + student.getIp()
-                            + "(ID: " + student.getId() + ")");
+                    System.out.println("\n新的学生连接: " + student.getIp() + "(ID: " + student.getId() + ")");
                     System.out.print("> ");
                 } else {
-                    Notification.show(
-                            "新的学生连接", student.getIp(), ToastTypes.INFO);
+                    Notification.show("新的学生连接", student.getIp(), ToastTypes.INFO);
                 }
             } finally {
                 lock.unlock();
